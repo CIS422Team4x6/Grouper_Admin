@@ -737,6 +737,62 @@ namespace GroupBuilder
 
         #region Programming Languages 
 
+        public static int InsertLanguage(ProgrammingLanguage language)
+        {
+            int languageID = 0;
+
+            SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
+            con.Open();
+            SqlCommand cmd = new SqlCommand(
+                @"SELECT *  
+                FROM ProgrammingLanguages     
+                WHERE Name = @Name;", con);
+            cmd.Parameters.AddWithValue("@Name", language.Name);
+
+            languageID = Convert.ToInt32(cmd.ExecuteScalar());
+            con.Close();
+            if (languageID == 0)
+            {
+                cmd = new SqlCommand(
+                @"INSERT INTO ProgrammingLanguages    
+                    (Name) 
+                    VALUES 
+                    (@Name);
+                    SELECT SCOPE_IDENTITY();", con);
+                cmd.Parameters.AddWithValue("@Name", language.Name);
+                con.Open();
+                languageID = Convert.ToInt32(cmd.ExecuteScalar());
+                con.Close();
+            }
+            return languageID;
+        }
+
+        public static void UpdateLanguage(ProgrammingLanguage language)
+        {
+            SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
+            SqlCommand cmd = new SqlCommand(
+                @"UPDATE ProgrammingLanguages  
+                    SET Name = @Name
+                WHERE LanguageID = @LanguageID;", con);
+            cmd.Parameters.AddWithValue("@LanguageID", language.LanguageID);
+            cmd.Parameters.AddWithValue("@Name", language.Name);
+            con.Open();
+            cmd.ExecuteNonQuery();
+            con.Close();
+        }
+
+        public static void DeleteLanguage(int languageID)
+        {
+            SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
+            SqlCommand cmd = new SqlCommand(
+                @"DELETE FROM Students_ProgrammingLanguages WHERE LanguageID = @LanguageID;
+                  DELETE FROM ProgrammingLanguages WHERE LanguageID = @LanguageID;", con);
+            cmd.Parameters.AddWithValue("@LanguageID", languageID);
+            con.Open();
+            cmd.ExecuteNonQuery();
+            con.Close();
+        }
+
         public static List<ProgrammingLanguage> GetLanguages()
         {
             List<ProgrammingLanguage> languages = new List<ProgrammingLanguage>();
@@ -855,6 +911,63 @@ namespace GroupBuilder
         #endregion
 
         #region Roles 
+
+        public static int InsertRole(Role role)
+        {
+            int roleID = 0;
+
+            SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
+            con.Open();
+            SqlCommand cmd = new SqlCommand(
+                @"SELECT *  
+                FROM Roles     
+                WHERE Name = @Name;", con);
+            cmd.Parameters.AddWithValue("@Name", role.Name);
+
+            roleID = Convert.ToInt32(cmd.ExecuteScalar());
+            con.Close();
+            if (roleID == 0)
+            {
+                cmd = new SqlCommand(
+                @"INSERT INTO Roles    
+                    (Name) 
+                    VALUES 
+                    (@Name);
+                    SELECT SCOPE_IDENTITY();", con);
+                cmd.Parameters.AddWithValue("@Name", role.Name);
+                con.Open();
+                roleID = Convert.ToInt32(cmd.ExecuteScalar());
+                con.Close();
+            }
+            return roleID;
+        }
+
+        public static void UpdateRole(Role role)
+        {
+            SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
+            SqlCommand cmd = new SqlCommand(
+                @"UPDATE Roles  
+                    SET Name = @Name
+                WHERE RoleID = @RoleID;", con);
+            cmd.Parameters.AddWithValue("@RoleID", role.RoleID);
+            cmd.Parameters.AddWithValue("@Name", role.Name);
+            con.Open();
+            cmd.ExecuteNonQuery();
+            con.Close();
+        }
+
+        public static void DeleteRole(int roleID)
+        {
+            SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
+            SqlCommand cmd = new SqlCommand(
+                @"DELETE FROM Students_RoleInterests WHERE RoleID = @RoleID;
+                  DELETE FROM Roles WHERE RoleID = @RoleID;", con);
+            cmd.Parameters.AddWithValue("@RoleID", roleID);
+            con.Open();
+            cmd.ExecuteNonQuery();
+            con.Close();
+        }
+
 
         public static List<Role> GetRoles()
         {
@@ -984,6 +1097,62 @@ namespace GroupBuilder
         #endregion
 
         #region Skills 
+
+        public static int InsertSkill(Skill skill)
+        {
+            int skillID = 0;
+
+            SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
+            con.Open();
+            SqlCommand cmd = new SqlCommand(
+                @"SELECT *  
+                FROM Skills      
+                WHERE Name = @Name;", con);
+            cmd.Parameters.AddWithValue("@Name", skill.Name);
+
+            skillID = Convert.ToInt32(cmd.ExecuteScalar());
+            con.Close();
+            if (skillID == 0)
+            {
+                cmd = new SqlCommand(
+                @"INSERT INTO Skills     
+                    (Name) 
+                    VALUES 
+                    (@Name);
+                    SELECT SCOPE_IDENTITY();", con);
+                cmd.Parameters.AddWithValue("@Name", skill.Name);
+                con.Open();
+                skillID = Convert.ToInt32(cmd.ExecuteScalar());
+                con.Close();
+            }
+            return skillID;
+        }
+
+        public static void UpdateSkill(Skill skill)
+        {
+            SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
+            SqlCommand cmd = new SqlCommand(
+                @"UPDATE Skills  
+                    SET Name = @Name
+                WHERE SkillID = @SkillID;", con);
+            cmd.Parameters.AddWithValue("@SkillID", skill.SkillID);
+            cmd.Parameters.AddWithValue("@Name", skill.Name);
+            con.Open();
+            cmd.ExecuteNonQuery();
+            con.Close();
+        }
+
+        public static void DeleteSkill(int skillID)
+        {
+            SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
+            SqlCommand cmd = new SqlCommand(
+                @"DELETE FROM Students_Skills WHERE SkillID = @SkillID;
+                  DELETE FROM Skills WHERE SkillID = @SkillID;", con);
+            cmd.Parameters.AddWithValue("@SkillID", skillID);
+            con.Open();
+            cmd.ExecuteNonQuery();
+            con.Close();
+        }
 
         public static List<Skill> GetSkills()
         {

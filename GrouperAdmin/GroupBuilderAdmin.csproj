@@ -161,7 +161,7 @@
     <Content Include="Account\Manage.aspx" />
     <Content Include="Account\ManagePassword.aspx" />
     <Content Include="Account\Register.aspx" />
-    <Content Include="App_Data\TextFile1.txt" />
+    <Content Include="Components.aspx" />
     <Content Include="Content\bootstrap.css" />
     <Content Include="Content\bootstrap.min.css" />
     <Content Include="Content\fa-brands.css" />
@@ -178,7 +178,6 @@
     <Content Include="Content\fontawesome.min.css" />
     <Content Include="Content\Images\grouper.png" />
     <Content Include="Content\Site.css" />
-    <Content Include="Courses.aspx" />
     <Content Include="Default.aspx" />
     <Content Include="favicon.ico" />
     <Content Include="webfonts\fa-brands-400.svg" />
@@ -209,7 +208,6 @@
     <None Include="Properties\PublishProfiles\GrouperAdmin - Web Deploy %283%29.pubxml" />
     <None Include="Properties\PublishProfiles\GrouperAdmin - Web Deploy.pubxml" />
     <None Include="Scripts\jquery-1.10.2.intellisense.js" />
-    <Content Include="Form\Default.aspx" />
     <Content Include="Groups.aspx" />
     <Content Include="Instructors.aspx" />
     <Content Include="Scripts\bootstrap.js" />
@@ -306,25 +304,18 @@
     <Compile Include="App_Start\IdentityConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="App_Start\Startup.Auth.cs" />
-    <Compile Include="Courses.aspx.cs">
-      <DependentUpon>Courses.aspx</DependentUpon>
+    <Compile Include="Components.aspx.cs">
+      <DependentUpon>Components.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
-    <Compile Include="Courses.aspx.designer.cs">
-      <DependentUpon>Courses.aspx</DependentUpon>
+    <Compile Include="Components.aspx.designer.cs">
+      <DependentUpon>Components.aspx</DependentUpon>
     </Compile>
     <Compile Include="Default.aspx.cs">
       <DependentUpon>Default.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="Default.aspx.designer.cs">
-      <DependentUpon>Default.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Form\Default.aspx.cs">
-      <DependentUpon>Default.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Form\Default.aspx.designer.cs">
       <DependentUpon>Default.aspx</DependentUpon>
     </Compile>
     <Compile Include="Global.asax.cs">
@@ -376,7 +367,9 @@
       <DependentUpon>ViewSwitcher.ascx</DependentUpon>
     </Compile>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="App_Data\" />
+  </ItemGroup>
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>

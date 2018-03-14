@@ -188,4 +188,6 @@
             </asp:Panel>
         </ContentTemplate>
     </asp:UpdatePanel>
+    <asp:HyperLink ID="FormComponentsHyperLink" runat="server" CssClass="btn btn-default btn-sm" NavigateUrl="~/Components.aspx"><span class="fa fa-pencil-alt"></span>&nbsp;&nbsp;Edit Form Components</asp:HyperLink>
+
 </asp:Content>
