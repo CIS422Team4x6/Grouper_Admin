@@ -69,7 +69,6 @@
                     </div>
                     <div class="col-md-6">
                         <asp:LinkButton ID="BeginGroupingLinkButton" runat="server" CssClass="btn btn-default btn-sm float-right" OnClick="BeginGroupingLinkButton_Click"><span class="fa fa-users"></span>&nbsp;&nbsp;Manage Groups&nbsp;&nbsp;<span class="fa fa-arrow-right"></span></asp:LinkButton>
-
                     </div>
                 </div>
                 <div class="row">
@@ -85,7 +84,6 @@
                         </div>
                     </div>
                 </div>
-
                 <asp:GridView ID="StudentsGridView" runat="server" CssClass="table table-bordered table-striped table-condensed small" DataKeyNames="StudentID" AutoGenerateColumns="false" OnRowCommand="StudentsGridView_RowCommand" OnRowDataBound="StudentsGridView_RowDataBound">
                     <EmptyDataTemplate>
                         <h4>No current student records for this course section.</h4>
@@ -135,7 +133,6 @@
                                         </td>
                                     </tr>
                                 </table>
-
                             </ItemTemplate>
                         </asp:TemplateField>
                         <asp:BoundField HeaderText="Welcome Sent" DataField="InitialNotificationSentDate" />
@@ -145,11 +142,9 @@
                                     <asp:LinkButton ID="EditLinkButton" runat="server" CssClass="btn btn-default btn-xs" CommandName="edit_student" CommandArgument='<%# Eval("StudentID") %>'><span class="fas fa-pencil-alt"></span>&nbsp;&nbsp;Edit</asp:LinkButton>
                                     <asp:LinkButton ID="SendWelcomeEmail" runat="server" CssClass="btn btn-default btn-xs" CommandName="send_welcome" CommandArgument='<%# Eval("StudentID") %>'><span class="fas fa-paper-plane"></span>&nbsp;&nbsp;Send Welcome</asp:LinkButton>
                                     <asp:LinkButton ID="RemoveLinkButton" runat="server" CssClass="btn btn-danger btn-xs" CommandName="delete_student" CommandArgument='<%# Eval("StudentID") %>'><span class="fas fa-times"></span>&nbsp;&nbsp;Delete</asp:LinkButton>
-
                                 </div>
                             </ItemTemplate>
                         </asp:TemplateField>
-
                     </Columns>
                 </asp:GridView>
             </asp:Panel>
@@ -179,7 +174,6 @@
                             <div class="form-group">
                                 <asp:Label ID="UOIDLabel" CssClass="control-label" runat="server">UOID: </asp:Label>
                                 <asp:TextBox ID="UOIDTextBox" runat="server" CssClass="form-control input-sm" MaxLength="9"></asp:TextBox>
-                                <%--                <asp:RegularExpressionValidator ControlToValidate="UOIDTextBox" runat="server" ErrorMessage="Must be 95*******" ValidationExpression="^[9][5]\d{7}" CssClass="text-danger"></asp:RegularExpressionValidator>--%>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -326,7 +320,6 @@
                 </div>
                 <div class="panel panel-default">
                     <h4>Role Interest</h4>
-
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">
@@ -412,7 +405,6 @@
                 </div>
                 <div class="panel panel-default">
                     <h4>Skills</h4>
-
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">

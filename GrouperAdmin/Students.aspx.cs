@@ -15,9 +15,15 @@ namespace GroupBuilderAdmin
 {
     public partial class Students : System.Web.UI.Page
     {
+        #region Constants
+
         public static string FILE_PATH = @"E:\Inetpub\Files\grouper\";
         private static string LOCAL_PATH = "./App_Data/";
         private static bool LOCAL_FLAG = false;
+
+        #endregion
+
+        #region Variables and Page Properties
 
         private List<Course> _Courses;
         public List<Course> Courses
@@ -158,6 +164,10 @@ namespace GroupBuilderAdmin
             }
         }
 
+        #endregion
+
+        #region Modal Dialogs
+
         private void MessageBox(string title, string message, string button)
         {
             MessageBoxTitleLabel.Text = title;
@@ -215,6 +225,52 @@ namespace GroupBuilderAdmin
             upModal.Update();
         }
 
+        protected void MessageBoxCreateLinkButton_Click(object sender, EventArgs e)
+        {
+            int studentID = int.Parse(SelectedStudentIDHiddenField.Value);
+
+            if (studentID == -1)
+            {
+                foreach (Student student in InstructorCourse.Students)
+                {
+                    if (student.InitialNotificationSentDate == null)
+                    {
+                        SendSurveyLinkMessage(student);
+
+                        student.InitialNotificationSentDate = DateTime.Now;
+                        GrouperMethods.UpdateStudent(student);
+                    }
+                }
+
+                StudentsGridView_BindGridView();
+
+                MessageBox("Welcome Messages Sent", "Welcome messages have been sent to all previously unnotified students.", "Okay");
+            }
+            else if (studentID == 0)
+            {
+                foreach (Student student in InstructorCourse.Students)
+                {
+                    GrouperMethods.DeleteStudent(student.StudentID);
+                }
+
+                _InstructorCourse = null;
+
+                StudentsGridView_BindGridView();
+                MessageBox("Students Deleted", "All students have been deleted.", "Okay");
+            }
+            else
+            {
+                GrouperMethods.DeleteStudent(studentID);
+                MessageBox("Student Deleted", "The student record has been deleted.", "Okay");
+
+                _InstructorCourse = null;
+
+                StudentsGridView_BindGridView();
+            }
+        }
+
+        #endregion
+
         protected void Page_Load(object sender, EventArgs e)
         {
 
@@ -239,10 +295,301 @@ namespace GroupBuilderAdmin
             }
         }
 
+        #region StudentsGridView
+
+        // Binds the Students GridView
         protected void StudentsGridView_BindGridView()
         {
             StudentsGridView.DataSource = InstructorCourse.Students;
             StudentsGridView.DataBind();
+        }
+
+        // Adds event handlers to the Students GridView rows
+        protected void StudentsGridView_RowCommand(object sender, GridViewCommandEventArgs e)
+        {
+            if (e.CommandName == "delete_student")
+            {
+                int studentID = int.Parse(e.CommandArgument.ToString());
+                Student student = GrouperMethods.GetStudent(studentID);
+
+                ConfirmDeleteMessageBox(student);
+            }
+            else if (e.CommandName == "edit_student")
+            {
+                EditStudentLabel.Text = "Edit Student";
+
+                int studentID = int.Parse(e.CommandArgument.ToString());
+
+                SelectedStudentIDHiddenField.Value = studentID.ToString();
+
+                Student student = GrouperMethods.GetStudent(studentID);
+
+                PriorCoursesGridView.DataSource = student.PriorCourses;
+                PriorCoursesGridView.DataBind();
+
+                GPALabel.Text = "Core GPA: " + student.GPA;
+
+                FirstNameTextBox.Text = student.FirstName;
+                PreferredNameTextBox.Text = student.PreferredName;
+                LastNameTextBox.Text = student.LastName;
+                DuckIDTextBox.Text = student.DuckID;
+                UOIDTextBox.Text = student.UOID.ToString();
+
+                if (student.EnglishSecondLanguageFlag != null)
+                {
+                    EnglishLanguageDropDownList.SelectedValue = student.EnglishSecondLanguageFlag.ToString();
+                }
+
+                NativeLanguageTextBox.Text = student.NativeLanguage;
+
+                WorkExperienceTextBox.Text = student.DevelopmentExperience;
+                LearningExpectationsTextBox.Text = student.LearningExpectations;
+
+                List<Course> coreCourses = Courses.Where(x => x.CoreCourseFlag == true).ToList();
+
+                CoreCoursesDropDownList.DataSource = coreCourses;
+                CoreCoursesDropDownList.DataBind();
+
+                ViewState["PriorCourses"] = new List<Course>();
+
+                foreach (Course course in student.PriorCourses)
+                {
+                    ((List<Course>)ViewState["PriorCourses"]).Add(course);
+                    CoreCoursesDropDownList.Items.FindByValue(course.CourseID.ToString()).Enabled = false;
+                }
+
+                PriorCoursesGridView.DataSource = (List<Course>)ViewState["PriorCourses"];
+                PriorCoursesGridView.DataBind();
+
+                List<Course> currentCourses = Courses;
+
+                CurrentCoursesDropDownList.DataSource = coreCourses;
+                CurrentCoursesDropDownList.DataBind();
+
+                ViewState["CurrentCourses"] = new List<Course>();
+
+                foreach (Course course in student.CurrentCourses)
+                {
+                    ((List<Course>)ViewState["CurrentCourses"]).Add(course);
+                    ListItem item = CurrentCoursesDropDownList.Items.FindByValue(course.CourseID.ToString());
+                    if (item != null)
+                    {
+                        item.Enabled = false;
+                    }
+                }
+
+                CurrentCoursesGridView.DataSource = (List<Course>)ViewState["CurrentCourses"];
+                CurrentCoursesGridView.DataBind();
+
+                if (((List<Course>)ViewState["CurrentCourses"]).Count == Courses.Count)
+                {
+                    AddCurrentCourseLinkButton.Enabled = false;
+                    AddCurrentCourseLinkButton.CssClass = "btn btn-default btn-sm disabled";
+                }
+                else
+                {
+                    AddCurrentCourseLinkButton.Enabled = true;
+                    AddCurrentCourseLinkButton.CssClass = "btn btn-default btn-sm";
+                }
+
+                ProgrammingLanguagesDropDownList.DataSource = Languages;
+                ProgrammingLanguagesDropDownList.DataBind();
+
+                ViewState["Languages"] = new List<ProgrammingLanguage>();
+
+                foreach (ProgrammingLanguage language in student.Languages)
+                {
+                    ((List<ProgrammingLanguage>)ViewState["Languages"]).Add(language);
+                    ProgrammingLanguagesDropDownList.Items.FindByValue(language.LanguageID.ToString()).Enabled = false;
+                }
+
+                ProgrammingLanguagesGridView.DataSource = (List<ProgrammingLanguage>)ViewState["Languages"];
+                ProgrammingLanguagesGridView.DataBind();
+
+                RolesDropDownList.DataSource = Roles;
+                RolesDropDownList.DataBind();
+
+                ViewState["Roles"] = new List<Role>();
+
+                foreach (Role role in student.InterestedRoles)
+                {
+                    ((List<Role>)ViewState["Roles"]).Add(role);
+                    RolesDropDownList.Items.FindByValue(role.RoleID.ToString()).Enabled = false;
+                }
+
+                RolesGridView.DataSource = (List<Role>)ViewState["Roles"];
+                RolesGridView.DataBind();
+
+                SkillsDropDownList.DataSource = Skills;
+                SkillsDropDownList.DataBind();
+
+                ViewState["Skills"] = new List<Skill>();
+
+                foreach (Skill skill in student.Skills)
+                {
+                    ((List<Skill>)ViewState["Skills"]).Add(skill);
+                    SkillsDropDownList.Items.FindByValue(skill.SkillID.ToString()).Enabled = false;
+                }
+
+                SkillsGridView.DataSource = (List<Skill>)ViewState["Skills"];
+                SkillsGridView.DataBind();
+
+                GUIDLabel.Text = "Student GUID: " + student.GUID;
+
+                StudentListPanel.Visible = false;
+                AddStudentPanel.Visible = true;
+
+                ScriptManager.RegisterClientScriptBlock(this, Page.GetType(), "ToTheTop", "ToTopOfPage();", true);
+            }
+            else if (e.CommandName == "send_welcome")
+            {
+                int studentID = int.Parse(e.CommandArgument.ToString());
+
+                Student student = GrouperMethods.GetStudent(studentID);
+
+                SendSurveyLinkMessage(student);
+
+                student.InitialNotificationSentDate = DateTime.Now;
+                GrouperMethods.UpdateStudent(student);
+
+                StudentsGridView_BindGridView();
+            }
+            else if (e.CommandName == "re_open")
+            {
+                int studentID = int.Parse(e.CommandArgument.ToString());
+
+                Student student = GrouperMethods.GetStudent(studentID);
+
+                student.SurveySubmittedDate = null;
+
+                GrouperMethods.UpdateStudent(student);
+
+                InstructorCourse.Students = GrouperMethods.GetStudents(InstructorCourseID);
+
+                StudentsGridView_BindGridView();
+            }
+        }
+
+        // Renders each row of the GridView
+        protected void StudentsGridView_RowDataBound(object sender, GridViewRowEventArgs e)
+        {
+            if (e.Row.RowType == DataControlRowType.DataRow)
+            {
+                int studentID = Convert.ToInt32(StudentsGridView.DataKeys[e.Row.RowIndex].Values[0]);
+
+                Student student = GrouperMethods.GetStudent(studentID);
+
+                if (student != null)
+                {
+                    Label firstNameLabel = (Label)e.Row.FindControl("FirstNameLabel");
+
+                    if (!string.IsNullOrEmpty(student.FirstName))
+                    {
+                        firstNameLabel.Text = student.FirstName;
+                        if (!string.IsNullOrEmpty(student.PreferredName))
+                        {
+                            firstNameLabel.Text += "<br />(" + student.PreferredName + ")";
+                        }
+                    }
+
+                    Label nativeLanguageLabel = (Label)e.Row.FindControl("NativeLanguageLabel");
+
+                    if (student.EnglishSecondLanguageFlag != null)
+                    {
+                        if (student.EnglishSecondLanguageFlag == true)
+                        {
+                            if (!string.IsNullOrEmpty(student.NativeLanguage))
+                            {
+                                nativeLanguageLabel.Text = student.NativeLanguage;
+                            }
+                            else
+                            {
+                                nativeLanguageLabel.Text = "Unspecified";
+                            }
+                        }
+                        else
+                        {
+                            nativeLanguageLabel.Text = "English";
+                        }
+                    }
+                    else
+                    {
+                        nativeLanguageLabel.Text = "Unspecified";
+                    }
+
+                    string languages = "";
+
+                    if (student.Languages != null)
+                    {
+                        if (student.Languages.Count > 0)
+                        {
+                            languages += "<table class='table table-bordered table-condensed' style='font-size: .9em;'>";
+                            foreach (ProgrammingLanguage language in student.Languages.OrderByDescending(x => x.ProficiencyLevel))
+                            {
+                                languages += "<tr><td><span class='no-wrap'>" + language.Icon + " " + language.Name + " - " + language.ProficiencyLevel.ToString() + "</span></td></tr>";
+                            }
+                            languages += "</table>";
+                        }
+                    }
+                    Label programmingLanguagesLabel = (Label)e.Row.FindControl("LanguagesLabel");
+                    programmingLanguagesLabel.Text = languages;
+
+                    string roles = "";
+
+                    if (student.InterestedRoles != null)
+                    {
+                        if (student.InterestedRoles.Count > 0)
+                        {
+                            roles += "<table class='table table-bordered table-condensed' style='font-size: .9em;'>";
+                            foreach (Role role in student.InterestedRoles.OrderByDescending(x => x.InterestLevel))
+                            {
+                                roles += "<tr><td><span class='no-wrap'>" + role.Icon + " " + role.Name + " - " + role.InterestLevel.ToString() + "</span></td></tr>";
+                            }
+                            roles += "</table>";
+                        }
+                    }
+                    Label rolesLabel = (Label)e.Row.FindControl("RolesLabel");
+                    rolesLabel.Text = roles;
+
+
+                    string skills = "";
+
+                    if (student.Skills != null)
+                    {
+                        if (student.Skills.Count > 0)
+                        {
+                            skills += "<table class='table table-bordered table-condensed' style='font-size: .9em;'>";
+                            foreach (Skill skill in student.Skills)
+                            {
+                                skills += "<tr><td><span class='no-wrap'>" + skill.Name + " - " + skill.ProficiencyLevel.ToString() + "</span></td></tr>";
+                            }
+                            skills += "</table>";
+                        }
+                    }
+                    Label skillsLabel = (Label)e.Row.FindControl("SkillsLabel");
+                    skillsLabel.Text = skills;
+                }
+            }
+        }
+
+        #endregion
+
+        #region Student Record Importing
+
+        protected void ImportStudentsLinkButton_Click(object sender, EventArgs e)
+        {
+            ImportStudentsPanel.Visible = true;
+            ImportStudentsLinkButton.Visible = false;
+
+            StudentListPanel.Visible = false;
+        }
+
+        protected void CancelImportStudentsLinkButton_Click(object sender, EventArgs e)
+        {
+            ImportStudentsPanel.Visible = false;
+            ImportStudentsLinkButton.Visible = true;
+
+            StudentListPanel.Visible = true;
         }
 
         protected void ProcessStudentsFileLinkButton_Click(object sender, EventArgs e)
@@ -255,29 +602,24 @@ namespace GroupBuilderAdmin
             string[] fileNameParts = file.FileName.Split('.');
             string extension = fileNameParts[1].Trim().ToLower();
 
-
             if (extension != "csv")
             {
                 MessageBox("Invalid File Type", "'" + extension + "' is not a valid file type.  Please limit to proper .csv (comma sorted value) files containing student data.", "Okay");
             }
             else
             {
-
                 if (file.ContentType != "text/csv" && file.ContentType != "application/vnd.ms-excel")
                 {
                     MessageBox("Invalid File Type", "This does not appear to be a proper file type.  Please limit to proper .csv (comma sorted value) files containing student data.", "Okay");
                 }
                 else
                 {
-
-
                     if (file.ContentLength > 0)
                     {
                         fileName = SaveFile(file);
                     }
 
                     string path = "";
-
                     if (!LOCAL_FLAG)
                     {
                         path = FILE_PATH + fileName;
@@ -286,7 +628,6 @@ namespace GroupBuilderAdmin
                     {
                         path = Server.MapPath(LOCAL_PATH + fileName);
                     }
-
                     if (File.Exists(path))
                     {
                         StreamReader reader = File.OpenText(path);
@@ -528,10 +869,8 @@ namespace GroupBuilderAdmin
                 }
                 index++;
             }
-
             return studentList;
         }
-
 
         private string SaveFile(HttpPostedFile file)
         {
@@ -592,171 +931,9 @@ namespace GroupBuilderAdmin
             return fileName;
         }
 
-        protected void StudentsGridView_RowCommand(object sender, GridViewCommandEventArgs e)
-        {
-            if(e.CommandName == "delete_student")
-            {
-                int studentID = int.Parse(e.CommandArgument.ToString());
-                Student student = GrouperMethods.GetStudent(studentID);
-                
-                ConfirmDeleteMessageBox(student);
-            }
-            else if(e.CommandName == "edit_student")
-            {
-                EditStudentLabel.Text = "Edit Student";
+        #endregion
 
-                int studentID = int.Parse(e.CommandArgument.ToString());
-
-                SelectedStudentIDHiddenField.Value = studentID.ToString();
-
-                Student student = GrouperMethods.GetStudent(studentID);
-
-                PriorCoursesGridView.DataSource = student.PriorCourses;
-                PriorCoursesGridView.DataBind();
-
-                GPALabel.Text = "Core GPA: " + student.GPA;
-
-
-                FirstNameTextBox.Text = student.FirstName;
-                PreferredNameTextBox.Text = student.PreferredName;
-                LastNameTextBox.Text = student.LastName;
-                DuckIDTextBox.Text = student.DuckID;
-                UOIDTextBox.Text = student.UOID.ToString();
-
-                if (student.EnglishSecondLanguageFlag != null)
-                {
-                    EnglishLanguageDropDownList.SelectedValue = student.EnglishSecondLanguageFlag.ToString();
-                }
-
-                NativeLanguageTextBox.Text = student.NativeLanguage;
-
-                WorkExperienceTextBox.Text = student.DevelopmentExperience;
-                LearningExpectationsTextBox.Text = student.LearningExpectations;
-
-                List<Course> coreCourses = Courses.Where(x => x.CoreCourseFlag == true).ToList();
-
-                CoreCoursesDropDownList.DataSource = coreCourses;
-                CoreCoursesDropDownList.DataBind();
-
-                ViewState["PriorCourses"] = new List<Course>();
-
-                foreach(Course course in student.PriorCourses)
-                {
-                    ((List<Course>)ViewState["PriorCourses"]).Add(course);
-                    CoreCoursesDropDownList.Items.FindByValue(course.CourseID.ToString()).Enabled = false;
-                }
-
-                PriorCoursesGridView.DataSource = (List<Course>)ViewState["PriorCourses"];
-                PriorCoursesGridView.DataBind();
-
-                List<Course> currentCourses = Courses;
-
-                CurrentCoursesDropDownList.DataSource = coreCourses;
-                CurrentCoursesDropDownList.DataBind();
-
-                ViewState["CurrentCourses"] = new List<Course>();
-
-                foreach (Course course in student.CurrentCourses)
-                {
-                    ((List<Course>)ViewState["CurrentCourses"]).Add(course);
-                    ListItem item = CurrentCoursesDropDownList.Items.FindByValue(course.CourseID.ToString());
-                    if (item != null)
-                    {
-                        item.Enabled = false;
-                    }
-                }
-
-                CurrentCoursesGridView.DataSource = (List<Course>)ViewState["CurrentCourses"];
-                CurrentCoursesGridView.DataBind();
-
-                if (((List<Course>)ViewState["CurrentCourses"]).Count == Courses.Count)
-                {
-                    AddCurrentCourseLinkButton.Enabled = false;
-                    AddCurrentCourseLinkButton.CssClass = "btn btn-default btn-sm disabled";
-                }
-                else
-                {
-                    AddCurrentCourseLinkButton.Enabled = true;
-                    AddCurrentCourseLinkButton.CssClass = "btn btn-default btn-sm";
-                }
-
-                ProgrammingLanguagesDropDownList.DataSource = Languages;
-                ProgrammingLanguagesDropDownList.DataBind();
-
-                ViewState["Languages"] = new List<ProgrammingLanguage>();
-
-                foreach(ProgrammingLanguage language in student.Languages)
-                {
-                    ((List<ProgrammingLanguage>)ViewState["Languages"]).Add(language);
-                    ProgrammingLanguagesDropDownList.Items.FindByValue(language.LanguageID.ToString()).Enabled = false;
-                }
-
-                ProgrammingLanguagesGridView.DataSource = (List<ProgrammingLanguage>)ViewState["Languages"];
-                ProgrammingLanguagesGridView.DataBind();
-
-                RolesDropDownList.DataSource = Roles;
-                RolesDropDownList.DataBind();
-
-                ViewState["Roles"] = new List<Role>();
-                
-                foreach(Role role in student.InterestedRoles)
-                {
-                    ((List<Role>)ViewState["Roles"]).Add(role);
-                    RolesDropDownList.Items.FindByValue(role.RoleID.ToString()).Enabled = false;
-                }
-
-                RolesGridView.DataSource = (List<Role>)ViewState["Roles"];
-                RolesGridView.DataBind();
-
-                SkillsDropDownList.DataSource = Skills;
-                SkillsDropDownList.DataBind();
-
-                ViewState["Skills"] = new List<Skill>();
-
-                foreach (Skill skill in student.Skills)
-                {
-                    ((List<Skill>)ViewState["Skills"]).Add(skill);
-                    SkillsDropDownList.Items.FindByValue(skill.SkillID.ToString()).Enabled = false;
-                }
-
-                SkillsGridView.DataSource = (List<Skill>)ViewState["Skills"];
-                SkillsGridView.DataBind();
-
-                GUIDLabel.Text = "Student GUID: " + student.GUID;
-
-                StudentListPanel.Visible = false;
-                AddStudentPanel.Visible = true;
-
-                ScriptManager.RegisterClientScriptBlock(this, Page.GetType(), "ToTheTop", "ToTopOfPage();", true);
-            }
-            else if(e.CommandName == "send_welcome")
-            {
-                int studentID = int.Parse(e.CommandArgument.ToString());
-
-                Student student = GrouperMethods.GetStudent(studentID);
-
-                SendSurveyLinkMessage(student);
-
-                student.InitialNotificationSentDate = DateTime.Now;
-                GrouperMethods.UpdateStudent(student);
-
-                StudentsGridView_BindGridView();
-            }
-            else if(e.CommandName == "re_open")
-            {
-                int studentID = int.Parse(e.CommandArgument.ToString());
-
-                Student student = GrouperMethods.GetStudent(studentID);
-
-                student.SurveySubmittedDate = null;
-
-                GrouperMethods.UpdateStudent(student);
-
-                InstructorCourse.Students = GrouperMethods.GetStudents(InstructorCourseID);
-
-                StudentsGridView_BindGridView();
-            }
-        }
+        #region Student Record Creation
 
         protected void AddStudentLinkButton_Click(object sender, EventArgs e)
         {
@@ -830,7 +1007,6 @@ namespace GroupBuilderAdmin
                     }
                     else
                     {
-
                         if (!string.IsNullOrEmpty(UOIDTextBox.Text.Trim()))
                         {
                             student.UOID = int.Parse(UOIDTextBox.Text.Trim());
@@ -1002,8 +1178,6 @@ namespace GroupBuilderAdmin
                         student.DevelopmentExperience = WorkExperienceTextBox.Text.Trim();
                         student.LearningExpectations = WorkExperienceTextBox.Text.Trim();
 
-                        //student.SurveySubmittedDate = DateTime.Now;
-
                         GrouperMethods.UpdateStudent(student);
                     }
                 }
@@ -1091,20 +1265,499 @@ namespace GroupBuilderAdmin
             ScriptManager.RegisterClientScriptBlock(this, Page.GetType(), "ToTheTop", "ToTopOfPage();", true);
         }
 
-        protected void ImportStudentsLinkButton_Click(object sender, EventArgs e)
-        {
-            ImportStudentsPanel.Visible = true;
-            ImportStudentsLinkButton.Visible = false;
+        #region Student Editing
 
-            StudentListPanel.Visible = false;
+        #region Prior Courses
+
+        protected void AddPriorCourseLinkButton_Click(object sender, EventArgs e)
+        {
+            if (GradesDropDownList.SelectedIndex > 0)
+            {
+                int courseID = int.Parse(CoreCoursesDropDownList.SelectedValue);
+                double grade = double.Parse(GradesDropDownList.SelectedValue);
+
+                int studentID = 0;
+                if (!string.IsNullOrEmpty(SelectedStudentIDHiddenField.Value))
+                {
+                    studentID = int.Parse(SelectedStudentIDHiddenField.Value);
+                }
+
+                Course course = Courses.FirstOrDefault(x => x.CourseID == courseID);
+                course.Grade = grade;
+
+                if (ViewState["PriorCourses"] == null)
+                {
+                    ViewState["PriorCourses"] = new List<Course>();
+                    ((List<Course>)ViewState["PriorCourses"]).Add(course);
+                }
+                else
+                {
+                    ((List<Course>)ViewState["PriorCourses"]).Add(course);
+                }
+
+                double gpa = (double)((List<Course>)ViewState["PriorCourses"]).Average(x => x.Grade);
+
+                GPALabel.Text = "Core GPA: " + gpa.ToString("#.##");
+
+                PriorCoursesGridView.DataSource = (List<Course>)ViewState["PriorCourses"];
+                PriorCoursesGridView.DataBind();
+
+                List<Course> courses = Courses.Where(x => x.CoreCourseFlag == true).ToList();
+
+                CoreCoursesDropDownList.DataSource = courses;
+                CoreCoursesDropDownList.DataBind();
+
+                foreach (Course c in (List<Course>)ViewState["PriorCourses"])
+                {
+                    CoreCoursesDropDownList.Items.FindByValue(c.CourseID.ToString()).Enabled = false;
+                }
+
+                if (((List<Course>)ViewState["PriorCourses"]).Count == courses.Count)
+                {
+                    AddPriorCourseLinkButton.CssClass = "btn btn-default btn-sm disabled";
+                }
+                GradesDropDownList.SelectedIndex = 0;
+            }
+            else
+            {
+                MessageBox("Unable to Add Prior Course", "Please select a grade for this course.", "Okay");
+            }
         }
 
-        protected void CancelImportStudentsLinkButton_Click(object sender, EventArgs e)
+        protected void PriorCoursesGridView_RowCommand(object sender, GridViewCommandEventArgs e)
         {
-            ImportStudentsPanel.Visible = false;
-            ImportStudentsLinkButton.Visible = true;
+            if (e.CommandName == "delete_prior_course")
+            {
+                int courseID = int.Parse(e.CommandArgument.ToString());
 
-            StudentListPanel.Visible = true;
+                int studentID = 0;
+
+                if (!string.IsNullOrEmpty(SelectedStudentIDHiddenField.Value))
+                {
+                    studentID = int.Parse(SelectedStudentIDHiddenField.Value);
+                }
+
+                if (ViewState["PriorCourses"] != null)
+                {
+                    ((List<Course>)ViewState["PriorCourses"]).RemoveAll(x => x.CourseID == courseID);
+                }
+                else
+                {
+                    ViewState["PriorCourses"] = new List<Course>();
+                }
+
+                double gpa = 0.0;
+                if (ViewState["PriorCourses"] != null && ((List<Course>)ViewState["PriorCourses"]).Count > 0)
+                {
+                    gpa = (double)((List<Course>)ViewState["PriorCourses"]).Average(x => x.Grade);
+                }
+
+                GPALabel.Text = "Core GPA: " + gpa.ToString("#.##");
+
+                List<Course> coreCourses = Courses.Where(x => x.CoreCourseFlag == true).ToList();
+
+                CoreCoursesDropDownList.DataSource = coreCourses;
+                CoreCoursesDropDownList.DataBind();
+
+                foreach (Course course in (List<Course>)ViewState["PriorCourses"])
+                {
+                    CoreCoursesDropDownList.Items.FindByValue(course.CourseID.ToString()).Enabled = false;
+                }
+
+                if (((List<Course>)ViewState["PriorCourses"]).Count == coreCourses.Count)
+                {
+                    AddPriorCourseLinkButton.CssClass = "btn btn-default btn-sm disabled";
+                }
+                else
+                {
+                    AddPriorCourseLinkButton.CssClass = "btn btn-default btn-sm";
+                }
+
+                PriorCoursesGridView.DataSource = (List<Course>)ViewState["PriorCourses"];
+                PriorCoursesGridView.DataBind();
+            }
+        }
+
+        #endregion
+
+        #region Current Courses
+
+        protected void AddCurrentCourseLinkButton_Click(object sender, EventArgs e)
+        {
+            int courseID = int.Parse(CurrentCoursesDropDownList.SelectedValue);
+
+            int studentID = 0;
+
+            if (!string.IsNullOrEmpty(SelectedStudentIDHiddenField.Value))
+            {
+                studentID = int.Parse(SelectedStudentIDHiddenField.Value);
+            }
+
+            Course course = Courses.FirstOrDefault(x => x.CourseID == courseID);
+
+            if (ViewState["CurrentCourses"] == null)
+            {
+                ViewState["CurrentCourses"] = new List<Course>();
+                ((List<Course>)ViewState["CurrentCourses"]).Add(course);
+            }
+            else
+            {
+                ((List<Course>)ViewState["CurrentCourses"]).Add(course);
+            }
+
+            CurrentCoursesGridView.DataSource = (List<Course>)ViewState["CurrentCourses"];
+            CurrentCoursesGridView.DataBind();
+
+            List<Course> courses = Courses;
+
+            CurrentCoursesDropDownList.DataSource = courses;
+            CurrentCoursesDropDownList.DataBind();
+
+            foreach (Course c in (List<Course>)ViewState["CurrentCourses"])
+            {
+                CurrentCoursesDropDownList.Items.FindByValue(c.CourseID.ToString()).Enabled = false;
+            }
+
+            if (((List<Course>)ViewState["CurrentCourses"]).Count == courses.Count)
+            {
+                AddCurrentCourseLinkButton.Enabled = false;
+                AddCurrentCourseLinkButton.CssClass = "btn btn-default btn-sm disabled";
+            }
+            else
+            {
+                AddCurrentCourseLinkButton.Enabled = true;
+                AddCurrentCourseLinkButton.CssClass = "btn btn-default btn-sm";
+            }
+        }
+
+        protected void CurrentCoursesGridView_RowCommand(object sender, GridViewCommandEventArgs e)
+        {
+            if (e.CommandName == "delete_current_course")
+            {
+                int courseID = int.Parse(e.CommandArgument.ToString());
+
+                int studentID = 0;
+
+                if (!string.IsNullOrEmpty(SelectedStudentIDHiddenField.Value))
+                {
+                    studentID = int.Parse(SelectedStudentIDHiddenField.Value);
+                }
+
+                if (ViewState["CurrentCourses"] != null)
+                {
+                    ((List<Course>)ViewState["CurrentCourses"]).RemoveAll(x => x.CourseID == courseID);
+                }
+                else
+                {
+                    ViewState["CurrentCourses"] = new List<Course>();
+                }
+
+                double gpa = 0.0;
+                if ((List<Course>)ViewState["PriorCourses"] != null && ((List<Course>)ViewState["PriorCourses"]).Count > 0)
+                {
+                    gpa = (double)((List<Course>)ViewState["PriorCourses"]).Average(x => x.Grade);
+                    GPALabel.Text = "Core GPA: " + gpa.ToString("#.##");
+                }
+
+                List<Course> courses = Courses;
+
+                CurrentCoursesDropDownList.DataSource = courses;
+                CurrentCoursesDropDownList.DataBind();
+
+                foreach (Course course in (List<Course>)ViewState["CurrentCourses"])
+                {
+                    CurrentCoursesDropDownList.Items.FindByValue(course.CourseID.ToString()).Enabled = false;
+                }
+
+                CurrentCoursesGridView.DataSource = (List<Course>)ViewState["CurrentCourses"];
+                CurrentCoursesGridView.DataBind();
+
+                if (((List<Course>)ViewState["CurrentCourses"]).Count == courses.Count)
+                {
+                    AddCurrentCourseLinkButton.Enabled = false;
+                    AddCurrentCourseLinkButton.CssClass = "btn btn-default btn-sm disabled";
+                }
+                else
+                {
+                    AddCurrentCourseLinkButton.Enabled = true;
+                    AddCurrentCourseLinkButton.CssClass = "btn btn-default btn-sm";
+                }
+            }
+        }
+
+        #endregion
+
+        #region Programming Languages
+
+        protected void AddProgrammingLanguageLinkButton_Click(object sender, EventArgs e)
+        {
+            int programmingLanguageID = int.Parse(ProgrammingLanguagesDropDownList.SelectedValue);
+
+            if (ProgrammingAbilityLevelDropDownList.SelectedIndex > 0)
+            {
+                if (ViewState["Languages"] != null)
+                {
+                    List<ProgrammingLanguage> languages = (List<ProgrammingLanguage>)ViewState["Languages"];
+
+                    ProgrammingLanguage language = new ProgrammingLanguage();
+                    language.Name = ProgrammingLanguagesDropDownList.SelectedItem.Text;
+                    language.LanguageID = int.Parse(ProgrammingLanguagesDropDownList.SelectedValue);
+                    language.ProficiencyLevel = int.Parse(ProgrammingAbilityLevelDropDownList.SelectedValue);
+
+                    ((List<ProgrammingLanguage>)ViewState["Languages"]).Add(language);
+
+                    ProgrammingLanguagesGridView.DataSource = (List<ProgrammingLanguage>)ViewState["Languages"];
+                    ProgrammingLanguagesGridView.DataBind();
+
+                    ProgrammingLanguagesDropDownList.Items.FindByValue(language.LanguageID.ToString()).Enabled = false;
+                }
+                else
+                {
+                    ViewState["Languages"] = new List<ProgrammingLanguage>();
+                    ProgrammingLanguage language = new ProgrammingLanguage();
+                    language.Name = ProgrammingLanguagesDropDownList.SelectedItem.Text;
+                    language.LanguageID = int.Parse(ProgrammingLanguagesDropDownList.SelectedValue);
+                    language.ProficiencyLevel = int.Parse(ProgrammingAbilityLevelDropDownList.SelectedValue);
+
+                    ((List<ProgrammingLanguage>)ViewState["Languages"]).Add(language);
+
+                    ProgrammingLanguagesGridView.DataSource = (List<ProgrammingLanguage>)ViewState["Languages"];
+                    ProgrammingLanguagesGridView.DataBind();
+                    ProgrammingLanguagesDropDownList.Items.FindByValue(language.LanguageID.ToString()).Enabled = false;
+                }
+
+                if (((List<ProgrammingLanguage>)ViewState["Languages"]).Count == Languages.Count)
+                {
+                    AddProgrammingLanguageLinkButton.CssClass = "btn btn-default btn-sm disabled";
+                }
+                else
+                {
+                    AddProgrammingLanguageLinkButton.CssClass = "btn btn-default btn-sm";
+                }
+
+                ProgrammingAbilityLevelDropDownList.SelectedIndex = 0;
+            }
+            else
+            {
+                MessageBox("Unable to Add Programming Language", "Please select a level of ability.", "Okay");
+            }
+        }
+
+        protected void ProgrammingLanguagesGridView_RowCommand(object sender, GridViewCommandEventArgs e)
+        {
+            if (e.CommandName == "delete_language")
+            {
+                int languageID = int.Parse(e.CommandArgument.ToString());
+
+                if (ViewState["Languages"] != null)
+                {
+                    ((List<ProgrammingLanguage>)ViewState["Languages"]).RemoveAll(x => x.LanguageID == languageID).ToString();
+                    ProgrammingLanguagesGridView.DataSource = (List<ProgrammingLanguage>)ViewState["Languages"];
+                    ProgrammingLanguagesGridView.DataBind();
+
+                    ProgrammingLanguagesDropDownList.Items.FindByValue(languageID.ToString()).Enabled = true;
+
+
+                    if (((List<ProgrammingLanguage>)ViewState["Languages"]).Count == Languages.Count)
+                    {
+                        AddProgrammingLanguageLinkButton.CssClass = "btn btn-default btn-sm disabled";
+                    }
+                    else
+                    {
+                        AddProgrammingLanguageLinkButton.CssClass = "btn btn-default btn-sm";
+                    }
+                }
+            }
+        }
+
+        #endregion
+
+        #region Roles
+
+        protected void AddRoleLinkButton_Click(object sender, EventArgs e)
+        {
+            int roleID = int.Parse(RolesDropDownList.SelectedValue);
+
+            if (RoleInterestDropDownList.SelectedIndex > 0)
+            {
+                if (ViewState["Roles"] != null)
+                {
+                    List<Role> roles = (List<Role>)ViewState["Roles"];
+
+                    Role role = new Role();
+                    role.Name = RolesDropDownList.SelectedItem.Text;
+                    role.RoleID = int.Parse(RolesDropDownList.SelectedValue);
+                    role.InterestLevel = int.Parse(RoleInterestDropDownList.SelectedValue);
+
+                    ((List<Role>)ViewState["Roles"]).Add(role);
+
+                    RolesGridView.DataSource = (List<Role>)ViewState["Roles"];
+                    RolesGridView.DataBind();
+
+                    RolesDropDownList.Items.FindByValue(role.RoleID.ToString()).Enabled = false;
+                }
+                else
+                {
+                    ViewState["Roles"] = new List<Role>();
+                    Role role = new Role();
+                    role.Name = RolesDropDownList.SelectedItem.Text;
+                    role.RoleID = int.Parse(RolesDropDownList.SelectedValue);
+                    role.InterestLevel = int.Parse(RoleInterestDropDownList.SelectedValue);
+
+                    ((List<Role>)ViewState["Roles"]).Add(role);
+
+                    RolesGridView.DataSource = (List<Role>)ViewState["Roles"];
+                    RolesGridView.DataBind();
+                    RolesDropDownList.Items.FindByValue(role.RoleID.ToString()).Enabled = false;
+
+                }
+
+                RoleInterestDropDownList.SelectedIndex = 0;
+
+                if (((List<Role>)ViewState["Roles"]).Count == Roles.Count)
+                {
+                    AddRoleLinkButton.CssClass = "btn btn-default btn-sm disabled";
+                }
+                else
+                {
+                    AddRoleLinkButton.CssClass = "btn btn-default btn-sm";
+                }
+            }
+            else
+            {
+                MessageBox("Unable to Add Role", "Please select a level of interest.", "Okay");
+            }
+        }
+
+        protected void RolesGridView_RowCommand(object sender, GridViewCommandEventArgs e)
+        {
+            if (e.CommandName == "delete_role")
+            {
+                int roleID = int.Parse(e.CommandArgument.ToString());
+
+                if (ViewState["Roles"] != null)
+                {
+                    ((List<Role>)ViewState["Roles"]).RemoveAll(x => x.RoleID == roleID).ToString();
+                    RolesGridView.DataSource = (List<Role>)ViewState["Roles"];
+                    RolesGridView.DataBind();
+
+                    RolesDropDownList.Items.FindByValue(roleID.ToString()).Enabled = true;
+
+                    if (((List<Role>)ViewState["Roles"]).Count == Roles.Count)
+                    {
+                        AddRoleLinkButton.CssClass = "btn btn-default btn-sm disabled";
+                    }
+                    else
+                    {
+                        AddRoleLinkButton.CssClass = "btn btn-default btn-sm";
+                    }
+                }
+            }
+        }
+
+        #endregion
+
+        #region Skills
+
+        protected void AddSkillLinkButton_Click(object sender, EventArgs e)
+        {
+            int skillID = int.Parse(SkillsDropDownList.SelectedValue);
+
+            if (SkillsLevelDropDownList.SelectedIndex > 0)
+            {
+                if (ViewState["Skills"] != null)
+                {
+                    List<Skill> skills = (List<Skill>)ViewState["Skills"];
+
+                    Skill skill = new Skill();
+                    skill.Name = SkillsDropDownList.SelectedItem.Text;
+                    skill.SkillID = int.Parse(SkillsDropDownList.SelectedValue);
+                    skill.ProficiencyLevel = int.Parse(SkillsLevelDropDownList.SelectedValue);
+
+                    ((List<Skill>)ViewState["Skills"]).Add(skill);
+
+                    SkillsGridView.DataSource = (List<Skill>)ViewState["Skills"];
+                    SkillsGridView.DataBind();
+
+                    SkillsDropDownList.Items.FindByValue(skill.SkillID.ToString()).Enabled = false;
+                }
+                else
+                {
+                    ViewState["Skills"] = new List<Skill>();
+                    Skill skill = new Skill();
+                    skill.Name = SkillsDropDownList.SelectedItem.Text;
+                    skill.SkillID = int.Parse(SkillsDropDownList.SelectedValue);
+                    skill.ProficiencyLevel = int.Parse(SkillsLevelDropDownList.SelectedValue);
+
+                    ((List<Skill>)ViewState["Skills"]).Add(skill);
+
+                    SkillsGridView.DataSource = (List<Skill>)ViewState["Skills"];
+                    SkillsGridView.DataBind();
+                    SkillsDropDownList.Items.FindByValue(skill.SkillID.ToString()).Enabled = false;
+
+                }
+
+                SkillsLevelDropDownList.SelectedIndex = 0;
+
+                if (((List<Skill>)ViewState["Skills"]).Count == Skills.Count)
+                {
+                    AddSkillLinkButton.CssClass = "btn btn-default btn-sm disabled";
+                }
+                else
+                {
+                    AddSkillLinkButton.CssClass = "btn btn-default btn-sm";
+                }
+            }
+            else
+            {
+                MessageBox("Unable to Add Skill", "Please select a level of ability.", "Okay");
+            }
+        }
+
+        protected void SkillsGridView_RowCommand(object sender, GridViewCommandEventArgs e)
+        {
+            if (e.CommandName == "delete_skill")
+            {
+                int skillID = int.Parse(e.CommandArgument.ToString());
+
+                if (ViewState["Skills"] != null)
+                {
+                    ((List<Skill>)ViewState["Skills"]).RemoveAll(x => x.SkillID == skillID).ToString();
+                    SkillsGridView.DataSource = (List<Skill>)ViewState["Skills"];
+                    SkillsGridView.DataBind();
+
+                    SkillsDropDownList.Items.FindByValue(skillID.ToString()).Enabled = true;
+
+                    if (((List<Skill>)ViewState["Skills"]).Count == Skills.Count)
+                    {
+                        AddSkillLinkButton.CssClass = "btn btn-default btn-sm disabled";
+                    }
+                    else
+                    {
+                        AddSkillLinkButton.CssClass = "btn btn-default btn-sm";
+                    }
+                }
+            }
+        }
+
+        #endregion
+
+        #endregion
+
+        #endregion
+
+        #region Notifications
+
+        protected void SendWelcomeToAllStudentsLinkButton_Click(object sender, EventArgs e)
+        {
+            if (InstructorCourse.Students.Where(x => x.InitialNotificationSentDate == null).Count() == 0)
+            {
+                MessageBox("No Students to Notify", "All students have already been sent a welcome email.  To resend, select <b>Send Welcome</b> for the individual student row.", "Okay");
+            }
+            else
+            {
+                ConfirmSendWelcomeToAllStudents();
+            }
         }
 
         protected void SendSurveyLinkMessage(Student student)
@@ -1134,7 +1787,7 @@ namespace GroupBuilderAdmin
                                 @"<table border='0' cellpadding='0' cellspacing='0' height='100%' width='100%' id='bodyTable'>
                         <tr>
                             <td>
-                                <table border='0' cellpadding='20' cellspacing='0' width='600' id='emailContainer'>
+                                <table border='0' cellpadding='20' cellspacing='0' width='800' id='emailContainer'>
                                     <tr>
                                         <td valign='top'>";
             messageBody += "<h3>" + InstructorCourse.Course.FullName + " - Welcome</h3>";
@@ -1201,250 +1854,13 @@ namespace GroupBuilderAdmin
             }
         }
 
+        #endregion
+
+        #region Event Handlers
+
         protected void DeleteAllStudentsLinkButton_Click(object sender, EventArgs e)
         {
             ConfirmDeleteAllStudentsMessageBox();
-
-        }
-
-        protected void SendWelcomeToAllStudentsLinkButton_Click(object sender, EventArgs e)
-        {
-            if (InstructorCourse.Students.Where(x => x.InitialNotificationSentDate == null).Count() == 0)
-            {
-                MessageBox("No Students to Notify", "All students have already been sent a welcome email.  To resend, select <b>Send Welcome</b> for the individual student row.", "Okay");
-            }
-            else
-            {
-                ConfirmSendWelcomeToAllStudents();
-            }
-        }
-
-        protected void AddProgrammingLanguageLinkButton_Click(object sender, EventArgs e)
-        {
-            int programmingLanguageID = int.Parse(ProgrammingLanguagesDropDownList.SelectedValue);
-
-            if (ProgrammingAbilityLevelDropDownList.SelectedIndex > 0)
-            {
-                if (ViewState["Languages"] != null)
-                {
-                    List<ProgrammingLanguage> languages = (List<ProgrammingLanguage>)ViewState["Languages"];
-
-                    ProgrammingLanguage language = new ProgrammingLanguage();
-                    language.Name = ProgrammingLanguagesDropDownList.SelectedItem.Text;
-                    language.LanguageID = int.Parse(ProgrammingLanguagesDropDownList.SelectedValue);
-                    language.ProficiencyLevel = int.Parse(ProgrammingAbilityLevelDropDownList.SelectedValue);
-
-                    ((List<ProgrammingLanguage>)ViewState["Languages"]).Add(language);
-
-                    ProgrammingLanguagesGridView.DataSource = (List<ProgrammingLanguage>)ViewState["Languages"];
-                    ProgrammingLanguagesGridView.DataBind();
-
-                    ProgrammingLanguagesDropDownList.Items.FindByValue(language.LanguageID.ToString()).Enabled = false;
-                }
-                else
-                {
-                    ViewState["Languages"] = new List<ProgrammingLanguage>();
-                    ProgrammingLanguage language = new ProgrammingLanguage();
-                    language.Name = ProgrammingLanguagesDropDownList.SelectedItem.Text;
-                    language.LanguageID = int.Parse(ProgrammingLanguagesDropDownList.SelectedValue);
-                    language.ProficiencyLevel = int.Parse(ProgrammingAbilityLevelDropDownList.SelectedValue);
-
-                    ((List<ProgrammingLanguage>)ViewState["Languages"]).Add(language);
-
-                    ProgrammingLanguagesGridView.DataSource = (List<ProgrammingLanguage>)ViewState["Languages"];
-                    ProgrammingLanguagesGridView.DataBind();
-                    ProgrammingLanguagesDropDownList.Items.FindByValue(language.LanguageID.ToString()).Enabled = false;
-
-                }
-
-                if(((List<ProgrammingLanguage>)ViewState["Languages"]).Count == Languages.Count)
-                {
-                    AddProgrammingLanguageLinkButton.CssClass = "btn btn-default btn-sm disabled";
-                }
-                else
-                {
-                    AddProgrammingLanguageLinkButton.CssClass = "btn btn-default btn-sm";
-                }
-
-                ProgrammingAbilityLevelDropDownList.SelectedIndex = 0;
-            }
-            else
-            {
-                MessageBox("Unable to Add Programming Language", "Please select a level of ability.", "Okay");
-            }
-        }
-
-        protected void MessageBoxCreateLinkButton_Click(object sender, EventArgs e)
-        {
-            int studentID = int.Parse(SelectedStudentIDHiddenField.Value);
-
-            if (studentID == -1)
-            {
-                foreach (Student student in InstructorCourse.Students)
-                {
-                    if (student.InitialNotificationSentDate == null)
-                    {
-                        SendSurveyLinkMessage(student);
-
-                        student.InitialNotificationSentDate = DateTime.Now;
-                        GrouperMethods.UpdateStudent(student);
-                    }
-                }
-
-                StudentsGridView_BindGridView();
-
-                MessageBox("Welcome Messages Sent", "Welcome messages have been sent to all previously unnotified students.", "Okay");
-            }
-            else if(studentID == 0)
-            {
-                foreach (Student student in InstructorCourse.Students)
-                {
-                    GrouperMethods.DeleteStudent(student.StudentID);
-                }
-
-                _InstructorCourse = null;
-
-                StudentsGridView_BindGridView();
-                MessageBox("Students Deleted", "All students have been deleted.", "Okay");
-            }
-            else
-            {         
-                GrouperMethods.DeleteStudent(studentID);
-                MessageBox("Student Deleted", "The student record has been deleted.", "Okay");
-
-                _InstructorCourse = null;
-
-                StudentsGridView_BindGridView();
-
-            }
-        }
-
-        protected void ProgrammingLanguagesGridView_RowCommand(object sender, GridViewCommandEventArgs e)
-        {
-            if(e.CommandName == "delete_language")
-            {
-                int languageID = int.Parse(e.CommandArgument.ToString());
-
-                if(ViewState["Languages"] != null)
-                {
-                    ((List<ProgrammingLanguage>)ViewState["Languages"]).RemoveAll(x => x.LanguageID == languageID).ToString();
-                    ProgrammingLanguagesGridView.DataSource = (List<ProgrammingLanguage>)ViewState["Languages"];
-                    ProgrammingLanguagesGridView.DataBind();
-
-                    ProgrammingLanguagesDropDownList.Items.FindByValue(languageID.ToString()).Enabled = true;
-
-
-                    if (((List<ProgrammingLanguage>)ViewState["Languages"]).Count == Languages.Count)
-                    {
-                        AddProgrammingLanguageLinkButton.CssClass = "btn btn-default btn-sm disabled";
-                    }
-                    else
-                    {
-                        AddProgrammingLanguageLinkButton.CssClass = "btn btn-default btn-sm";
-                    }
-                }
-            }
-        }
-
-        protected void StudentsGridView_RowDataBound(object sender, GridViewRowEventArgs e)
-        {
-            if (e.Row.RowType == DataControlRowType.DataRow)
-            {
-                int studentID = Convert.ToInt32(StudentsGridView.DataKeys[e.Row.RowIndex].Values[0]);
-
-                Student student = GrouperMethods.GetStudent(studentID);
-
-                if (student != null)
-                {
-                    Label firstNameLabel = (Label)e.Row.FindControl("FirstNameLabel");
-
-                    if (!string.IsNullOrEmpty(student.FirstName))
-                    {
-                        firstNameLabel.Text = student.FirstName;
-                        if (!string.IsNullOrEmpty(student.PreferredName))
-                        {
-                            firstNameLabel.Text += "<br />(" + student.PreferredName + ")";
-                        }
-                    }
-
-                    Label nativeLanguageLabel = (Label)e.Row.FindControl("NativeLanguageLabel");
-
-                    if(student.EnglishSecondLanguageFlag != null)
-                    {
-                        if (student.EnglishSecondLanguageFlag == true)
-                        {
-                            if (!string.IsNullOrEmpty(student.NativeLanguage))
-                            {
-                                nativeLanguageLabel.Text = student.NativeLanguage;
-                            }
-                            else
-                            {
-                                nativeLanguageLabel.Text = "Unspecified";
-                            }
-                        }
-                        else
-                        {
-                            nativeLanguageLabel.Text = "English";
-                        }
-                    }
-                    else
-                    {
-                        nativeLanguageLabel.Text = "Unspecified";
-                    }
-
-                    string languages = "";
-
-                    if (student.Languages != null)
-                    {
-                        if (student.Languages.Count > 0)
-                        {
-                            languages += "<table class='table table-bordered table-condensed' style='font-size: .9em;'>";
-                            foreach (ProgrammingLanguage language in student.Languages.OrderByDescending(x => x.ProficiencyLevel))
-                            {
-                                languages += "<tr><td><span class='no-wrap'>" + language.Icon + " " + language.Name + " - " + language.ProficiencyLevel.ToString() + "</span></td></tr>";
-                            }
-                            languages += "</table>";
-                        }
-                    }
-                    Label programmingLanguagesLabel = (Label)e.Row.FindControl("LanguagesLabel");
-                    programmingLanguagesLabel.Text = languages;
-
-                    string roles = "";
-
-                    if (student.InterestedRoles != null)
-                    {
-                        if (student.InterestedRoles.Count > 0)
-                        {
-                            roles += "<table class='table table-bordered table-condensed' style='font-size: .9em;'>";
-                            foreach (Role role in student.InterestedRoles.OrderByDescending(x => x.InterestLevel))
-                            {
-                                roles += "<tr><td><span class='no-wrap'>" + role.Icon + " " + role.Name + " - " + role.InterestLevel.ToString() + "</span></td></tr>";
-                            }
-                            roles += "</table>";
-                        }
-                    }
-                    Label rolesLabel = (Label)e.Row.FindControl("RolesLabel");
-                    rolesLabel.Text = roles;
-
-
-                    string skills = "";
-
-                    if (student.Skills != null)
-                    {
-                        if (student.Skills.Count > 0)
-                        {
-                            skills += "<table class='table table-bordered table-condensed' style='font-size: .9em;'>";
-                            foreach (Skill skill in student.Skills)
-                            {
-                                skills += "<tr><td><span class='no-wrap'>" + skill.Name + " - " + skill.ProficiencyLevel.ToString() + "</span></td></tr>";
-                            }
-                            skills += "</table>";
-                        }
-                    }
-                    Label skillsLabel = (Label)e.Row.FindControl("SkillsLabel");
-                    skillsLabel.Text = skills;
-                }
-            }
         }
 
         protected void BeginGroupingLinkButton_Click(object sender, EventArgs e)
@@ -1452,401 +1868,6 @@ namespace GroupBuilderAdmin
             Response.Redirect("~/Groups.aspx?ID=" + InstructorCourseID);
         }
 
-        protected void AddSkillLinkButton_Click(object sender, EventArgs e)
-        {
-            int skillID = int.Parse(SkillsDropDownList.SelectedValue);
-
-            if (SkillsLevelDropDownList.SelectedIndex > 0)
-            {
-                if (ViewState["Skills"] != null)
-                {
-                    List<Skill> skills = (List<Skill>)ViewState["Skills"];
-
-                    Skill skill = new Skill();
-                    skill.Name = SkillsDropDownList.SelectedItem.Text;
-                    skill.SkillID = int.Parse(SkillsDropDownList.SelectedValue);
-                    skill.ProficiencyLevel = int.Parse(SkillsLevelDropDownList.SelectedValue);
-
-                    ((List<Skill>)ViewState["Skills"]).Add(skill);
-
-                    SkillsGridView.DataSource = (List<Skill>)ViewState["Skills"];
-                    SkillsGridView.DataBind();
-
-                    SkillsDropDownList.Items.FindByValue(skill.SkillID.ToString()).Enabled = false;
-                }
-                else
-                {
-                    ViewState["Skills"] = new List<Skill>();
-                    Skill skill = new Skill();
-                    skill.Name = SkillsDropDownList.SelectedItem.Text;
-                    skill.SkillID = int.Parse(SkillsDropDownList.SelectedValue);
-                    skill.ProficiencyLevel = int.Parse(SkillsLevelDropDownList.SelectedValue);
-
-                    ((List<Skill>)ViewState["Skills"]).Add(skill);
-
-                    SkillsGridView.DataSource = (List<Skill>)ViewState["Skills"];
-                    SkillsGridView.DataBind();
-                    SkillsDropDownList.Items.FindByValue(skill.SkillID.ToString()).Enabled = false;
-
-                }
-
-                SkillsLevelDropDownList.SelectedIndex = 0;
-
-                if(((List<Skill>)ViewState["Skills"]).Count == Skills.Count)
-                {
-                    AddSkillLinkButton.CssClass = "btn btn-default btn-sm disabled";
-                }
-                else
-                {
-                    AddSkillLinkButton.CssClass = "btn btn-default btn-sm";
-                }
-            }
-            else
-            {
-                MessageBox("Unable to Add Skill", "Please select a level of ability.", "Okay");
-            }
-        }
-
-        protected void SkillsGridView_RowCommand(object sender, GridViewCommandEventArgs e)
-        {
-            if (e.CommandName == "delete_skill")
-            {
-                int skillID = int.Parse(e.CommandArgument.ToString());
-
-                if (ViewState["Skills"] != null)
-                {
-                    ((List<Skill>)ViewState["Skills"]).RemoveAll(x => x.SkillID == skillID).ToString();
-                    SkillsGridView.DataSource = (List<Skill>)ViewState["Skills"];
-                    SkillsGridView.DataBind();
-
-                    SkillsDropDownList.Items.FindByValue(skillID.ToString()).Enabled = true;
-
-                    if (((List<Skill>)ViewState["Skills"]).Count == Skills.Count)
-                    {
-                        AddSkillLinkButton.CssClass = "btn btn-default btn-sm disabled";
-                    }
-                    else
-                    {
-                        AddSkillLinkButton.CssClass = "btn btn-default btn-sm";
-                    }
-                }
-            }
-        }
-
-        protected void AddRoleLinkButton_Click(object sender, EventArgs e)
-        {
-            int roleID = int.Parse(RolesDropDownList.SelectedValue);
-
-            if (RoleInterestDropDownList.SelectedIndex > 0)
-            {
-                if (ViewState["Roles"] != null)
-                {
-                    List<Role> roles = (List<Role>)ViewState["Roles"];
-
-                    Role role = new Role();
-                    role.Name = RolesDropDownList.SelectedItem.Text;
-                    role.RoleID = int.Parse(RolesDropDownList.SelectedValue);
-                    role.InterestLevel = int.Parse(RoleInterestDropDownList.SelectedValue);
-
-                    ((List<Role>)ViewState["Roles"]).Add(role);
-
-                    RolesGridView.DataSource = (List<Role>)ViewState["Roles"];
-                    RolesGridView.DataBind();
-
-                    RolesDropDownList.Items.FindByValue(role.RoleID.ToString()).Enabled = false;
-                }
-                else
-                {
-                    ViewState["Roles"] = new List<Role>();
-                    Role role = new Role();
-                    role.Name = RolesDropDownList.SelectedItem.Text;
-                    role.RoleID = int.Parse(RolesDropDownList.SelectedValue);
-                    role.InterestLevel = int.Parse(RoleInterestDropDownList.SelectedValue);
-
-                    ((List<Role>)ViewState["Roles"]).Add(role);
-
-                    RolesGridView.DataSource = (List<Role>)ViewState["Roles"];
-                    RolesGridView.DataBind();
-                    RolesDropDownList.Items.FindByValue(role.RoleID.ToString()).Enabled = false;
-
-                }
-
-                RoleInterestDropDownList.SelectedIndex = 0;
-
-                if(((List<Role>)ViewState["Roles"]).Count == Roles.Count)
-                {
-                    AddRoleLinkButton.CssClass = "btn btn-default btn-sm disabled";
-                }
-                else
-                {
-                    AddRoleLinkButton.CssClass = "btn btn-default btn-sm";
-                }
-            }
-            else
-            {
-                MessageBox("Unable to Add Role", "Please select a level of interest.", "Okay");
-            }
-        }
-
-        protected void RolesGridView_RowCommand(object sender, GridViewCommandEventArgs e)
-        {
-            if (e.CommandName == "delete_role")
-            {
-                int roleID = int.Parse(e.CommandArgument.ToString());
-
-                if (ViewState["Roles"] != null)
-                {
-                    ((List<Role>)ViewState["Roles"]).RemoveAll(x => x.RoleID == roleID).ToString();
-                    RolesGridView.DataSource = (List<Role>)ViewState["Roles"];
-                    RolesGridView.DataBind();
-
-                    RolesDropDownList.Items.FindByValue(roleID.ToString()).Enabled = true;
-
-                    if (((List<Role>)ViewState["Roles"]).Count == Roles.Count)
-                    {
-                        AddRoleLinkButton.CssClass = "btn btn-default btn-sm disabled";
-                    }
-                    else
-                    {
-                        AddRoleLinkButton.CssClass = "btn btn-default btn-sm";
-                    }
-                }
-            }
-        }
-
-        protected void GradesRepeater_ItemCommand(object source, RepeaterCommandEventArgs e)
-        {
-            
-        }
-
-        protected void AddCurrentCourseLinkButton_Click(object sender, EventArgs e)
-        {
-            int courseID = int.Parse(CurrentCoursesDropDownList.SelectedValue);
-
-            int studentID = 0;
-
-            if (!string.IsNullOrEmpty(SelectedStudentIDHiddenField.Value))
-            {
-                studentID = int.Parse(SelectedStudentIDHiddenField.Value);
-            }
-
-            Course course = Courses.FirstOrDefault(x => x.CourseID == courseID);
-            
-            if(ViewState["CurrentCourses"] == null)
-            {
-                ViewState["CurrentCourses"] = new List<Course>();
-                ((List<Course>)ViewState["CurrentCourses"]).Add(course);
-            }
-            else
-            {
-                ((List<Course>)ViewState["CurrentCourses"]).Add(course);
-            }
-
-            CurrentCoursesGridView.DataSource = (List<Course>)ViewState["CurrentCourses"];
-            CurrentCoursesGridView.DataBind();
-
-            List<Course> courses = Courses;
-
-            CurrentCoursesDropDownList.DataSource = courses;
-            CurrentCoursesDropDownList.DataBind();
-
-            foreach (Course c in (List<Course>)ViewState["CurrentCourses"])
-            {
-                CurrentCoursesDropDownList.Items.FindByValue(c.CourseID.ToString()).Enabled = false;
-            }
-
-            if (((List<Course>)ViewState["CurrentCourses"]).Count == courses.Count)
-            {
-                AddCurrentCourseLinkButton.Enabled = false;
-                AddCurrentCourseLinkButton.CssClass = "btn btn-default btn-sm disabled";
-            }
-            else
-            {
-                AddCurrentCourseLinkButton.Enabled = true;
-                AddCurrentCourseLinkButton.CssClass = "btn btn-default btn-sm";
-            }
-        }
-
-        protected void AddPriorCourseLinkButton_Click(object sender, EventArgs e)
-        {
-            if (GradesDropDownList.SelectedIndex > 0)
-            {
-                int courseID = int.Parse(CoreCoursesDropDownList.SelectedValue);
-                double grade = double.Parse(GradesDropDownList.SelectedValue);
-
-                int studentID = 0;
-                if (!string.IsNullOrEmpty(SelectedStudentIDHiddenField.Value))
-                {
-                    studentID = int.Parse(SelectedStudentIDHiddenField.Value);
-                }
-
-                Course course = Courses.FirstOrDefault(x => x.CourseID == courseID);
-                course.Grade = grade;
-
-                if (ViewState["PriorCourses"] == null)
-                {
-                    ViewState["PriorCourses"] = new List<Course>();
-                    ((List<Course>)ViewState["PriorCourses"]).Add(course);
-                }
-                else
-                {
-                    ((List<Course>)ViewState["PriorCourses"]).Add(course);
-                }
-
-                double gpa = (double)((List<Course>)ViewState["PriorCourses"]).Average(x => x.Grade);
-
-                GPALabel.Text = "Core GPA: " + gpa.ToString("#.##");
-
-                PriorCoursesGridView.DataSource = (List<Course>)ViewState["PriorCourses"];
-                PriorCoursesGridView.DataBind();
-
-                List<Course> courses = Courses.Where(x => x.CoreCourseFlag == true).ToList();
-
-                CoreCoursesDropDownList.DataSource = courses;
-                CoreCoursesDropDownList.DataBind();
-
-                foreach (Course c in (List<Course>)ViewState["PriorCourses"])
-                {
-                    CoreCoursesDropDownList.Items.FindByValue(c.CourseID.ToString()).Enabled = false;
-                }
-
-                if(((List<Course>)ViewState["PriorCourses"]).Count == courses.Count)
-                {
-                    AddPriorCourseLinkButton.CssClass = "btn btn-default btn-sm disabled";
-                }
-                GradesDropDownList.SelectedIndex = 0;
-            }
-            else
-            {
-                MessageBox("Unable to Add Prior Course", "Please select a grade for this course.", "Okay");
-            }
-            //else if(CoreCoursesDropDownList.SelectedIndex == 0 && GradesDropDownList.SelectedIndex > 0)
-            //{
-            //    MessageBox("Unable to Add Prior Course", "Please select a course to add.", "Okay");
-            //}
-            //else
-            //{
-            //    MessageBox("Unable to Add Prior Course", "You must select a course, and a grade for the prior course in order to add it to the student record.", "Okay");
-            //}
-
-        }
-
-        protected void CurrentCoursesRepeater_ItemCommand(object source, RepeaterCommandEventArgs e)
-        {
-            
-        }
-
-        protected void CurrentCoursesGridView_RowCommand(object sender, GridViewCommandEventArgs e)
-        {
-            if (e.CommandName == "delete_current_course")
-            {
-                int courseID = int.Parse(e.CommandArgument.ToString());
-
-                int studentID = 0;
-
-                if (!string.IsNullOrEmpty(SelectedStudentIDHiddenField.Value))
-                {
-                    studentID = int.Parse(SelectedStudentIDHiddenField.Value);
-                }
-
-                if (ViewState["CurrentCourses"] != null)
-                {
-                    ((List<Course>)ViewState["CurrentCourses"]).RemoveAll(x => x.CourseID == courseID);
-                }
-                else
-                {
-                    ViewState["CurrentCourses"] = new List<Course>();
-                }
-
-                double gpa = 0.0;
-                if ((List<Course>)ViewState["PriorCourses"] != null && ((List<Course>)ViewState["PriorCourses"]).Count > 0)
-                {
-                    gpa = (double)((List<Course>)ViewState["PriorCourses"]).Average(x => x.Grade);
-                    GPALabel.Text = "Core GPA: " + gpa.ToString("#.##");
-                }
-
-                List<Course> courses = Courses;
-
-                CurrentCoursesDropDownList.DataSource = courses;
-                CurrentCoursesDropDownList.DataBind();
-
-                foreach (Course course in (List<Course>)ViewState["CurrentCourses"])
-                {
-                    CurrentCoursesDropDownList.Items.FindByValue(course.CourseID.ToString()).Enabled = false;
-                }
-
-                CurrentCoursesGridView.DataSource = (List<Course>)ViewState["CurrentCourses"];
-                CurrentCoursesGridView.DataBind();
-
-                if (((List<Course>)ViewState["CurrentCourses"]).Count == courses.Count)
-                {
-                    AddCurrentCourseLinkButton.Enabled = false;
-                    AddCurrentCourseLinkButton.CssClass = "btn btn-default btn-sm disabled";
-                }
-                else
-                {
-                    AddCurrentCourseLinkButton.Enabled = true;
-                    AddCurrentCourseLinkButton.CssClass = "btn btn-default btn-sm";
-                }
-            }
-        }
-
-        protected void PriorCoursesGridView_RowCommand(object sender, GridViewCommandEventArgs e)
-        {
-            if (e.CommandName == "delete_prior_course")
-            {
-                int courseID = int.Parse(e.CommandArgument.ToString());
-
-                int studentID = 0;
-
-                if (!string.IsNullOrEmpty(SelectedStudentIDHiddenField.Value))
-                {
-                    studentID = int.Parse(SelectedStudentIDHiddenField.Value);
-                }
-
-                //GrouperMethods.DeleteStudentPriorCourse(studentID, courseID);
-
-                if (ViewState["PriorCourses"] != null)
-                {
-                    ((List<Course>)ViewState["PriorCourses"]).RemoveAll(x => x.CourseID == courseID);
-                }
-                else
-                {
-                    ViewState["PriorCourses"] = new List<Course>();
-                }
-
-                double gpa = 0.0;
-                if (ViewState["PriorCourses"] != null && ((List<Course>)ViewState["PriorCourses"]).Count > 0)
-                {
-                    gpa = (double)((List<Course>)ViewState["PriorCourses"]).Average(x => x.Grade);
-                }
-
-                GPALabel.Text = "Core GPA: " + gpa.ToString("#.##");
-
-                //Student student = GrouperMethods.GetStudent(studentID);
-
-                List<Course> coreCourses = Courses.Where(x => x.CoreCourseFlag == true).ToList();
-
-                CoreCoursesDropDownList.DataSource = coreCourses;
-                CoreCoursesDropDownList.DataBind();
-
-                foreach (Course course in (List<Course>)ViewState["PriorCourses"])
-                {
-                    CoreCoursesDropDownList.Items.FindByValue(course.CourseID.ToString()).Enabled = false;
-                }
-
-                if (((List<Course>)ViewState["PriorCourses"]).Count == coreCourses.Count)
-                {
-                    AddPriorCourseLinkButton.CssClass = "btn btn-default btn-sm disabled";
-                }
-                else
-                {
-                    AddPriorCourseLinkButton.CssClass = "btn btn-default btn-sm";
-                }
-
-                PriorCoursesGridView.DataSource = (List<Course>)ViewState["PriorCourses"];
-                PriorCoursesGridView.DataBind();
-            }
-        }
+        #endregion
     }
 }
