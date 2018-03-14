@@ -12,6 +12,8 @@ namespace GroupBuilderAdmin
 {
     public partial class Groups : System.Web.UI.Page
     {
+        #region Page Variables and Properties
+
         private static int RECOMMENDED_GROUP_SIZE = 5;
 
         private int _InstructorCourseID;
@@ -102,7 +104,95 @@ namespace GroupBuilderAdmin
             }
         }
 
-        public static object JSonSerializer { get; private set; }
+        #endregion
+
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            if (Request.QueryString["ID"] != "" && Request.QueryString["ID"] != null)
+            {
+                int instructorCourseID = int.Parse(Request.QueryString["ID"]);
+
+                InstructorCourseIDHiddenField.Value = instructorCourseID.ToString();
+
+                InstructorCourseID = instructorCourseID;
+            }
+
+            if (!IsPostBack)
+            {
+                InstructorCourse instructorCourse = GrouperMethods.GetInstructorCourse(InstructorCourseID);
+
+                if (instructorCourse != null)
+                {
+                    string link = "mailto:";
+                    foreach (Student student in instructorCourse.Students)
+                    {
+                        link += student.DuckID + "@uoregon.edu,";
+                    }
+                    link = link.Substring(0, link.Length - 1);
+
+                    MailEntireClassLinkButton.NavigateUrl = link;
+
+                    if (instructorCourse.Groups.Count == 0)
+                    {
+                        int groupCount = instructorCourse.Students.Count / RECOMMENDED_GROUP_SIZE;
+
+                        if (groupCount > 0)
+                        {
+                            NumberOfGroupsDropDownList.SelectedValue = groupCount.ToString();
+                            RecommendedGroupAmountLabel.Text = "You have " + instructorCourse.Students.Count + " students. The recommended amount of groups for a class this size is " + groupCount + " (recommended group size is 5).";
+                        }
+                        else
+                        {
+                            groupCount = 1;
+                            NumberOfGroupsDropDownList.SelectedValue = groupCount.ToString();
+                            RecommendedGroupAmountLabel.Text = "You have " + instructorCourse.Students.Count + " students. The recommended amount of groups for a class this size is " + groupCount + " (recommended group size is 5).";
+                        }
+
+                        CreateGroupsPanel.Visible = true;
+                        ListPanel.Visible = false;
+                    }
+                    else
+                    {
+                        CreateGroupsPanel.Visible = false;
+
+                        List<Student> ungroupedStudents = GrouperMethods.GetUngroupedStudents(InstructorCourseID);
+                        if (ungroupedStudents.Count == 0)
+                        {
+                            ListPanel.Visible = true;
+                            GroupingPanel.Visible = false;
+                        }
+                        else
+                        {
+                            ListPanel.Visible = false;
+                            GroupingPanel.Visible = true;
+                        }
+                    }
+                }
+
+                if (instructorCourse != null)
+                {
+                    Course course = GrouperMethods.GetCourse(instructorCourse.CourseID);
+
+                    CourseNameLabel.Text = course.FullName;
+
+                    LanguagesDropDownList.DataSource = Languages;
+                    LanguagesDropDownList.DataBind();
+
+                    RolesDropDownList.DataSource = Roles;
+                    RolesDropDownList.DataBind();
+
+                    GroupsRepeater_BindRepeater();
+                    GroupsGridView_BindGridView();
+                }
+            }
+
+            if (InstructorCourse != null)
+            {
+                StudentsGridView_BindGridView();
+            }
+        }
+
+        #region Modal Dialogs
 
         private void MessageBox(string title, string message, string button)
         {
@@ -169,95 +259,79 @@ namespace GroupBuilderAdmin
             upModal.Update();
         }
 
-
-        protected void Page_Load(object sender, EventArgs e)
+        protected void MessageBoxCreateLinkButton_Click(object sender, EventArgs e)
         {
-            if (Request.QueryString["ID"] != "" && Request.QueryString["ID"] != null)
+            if (!string.IsNullOrEmpty(SelectedGroupIDHiddenField.Value))
             {
-                int instructorCourseID = int.Parse(Request.QueryString["ID"]);
+                int groupID = int.Parse(SelectedGroupIDHiddenField.Value);
 
-                InstructorCourseIDHiddenField.Value = instructorCourseID.ToString();
+                Group group = InstructorCourse.Groups.FirstOrDefault(x => x.GroupID == groupID);
 
-                InstructorCourseID = instructorCourseID;
-            }
-
-            if (!IsPostBack)
-            {
-                InstructorCourse instructorCourse = GrouperMethods.GetInstructorCourse(InstructorCourseID);
-
-                if (instructorCourse != null)
+                if (group != null)
                 {
-                    string link = "mailto:";
-                    foreach (Student student in instructorCourse.Students)
+                    foreach (Student member in group.Members)
                     {
-                        link += student.DuckID + "@uoregon.edu,";
+                        GrouperMethods.DeleteGroupMember(member.StudentID);
                     }
-                    link = link.Substring(0, link.Length - 1);
-
-                    MailEntireClassLinkButton.NavigateUrl = link;
-
-                    if (instructorCourse.Groups.Count == 0)
-                    {
-                        int groupCount = instructorCourse.Students.Count / RECOMMENDED_GROUP_SIZE;
-
-                        if (groupCount > 0)
-                        {
-                            NumberOfGroupsDropDownList.SelectedValue = groupCount.ToString();
-                            RecommendedGroupAmountLabel.Text = "You have " + instructorCourse.Students.Count + " students. The recommended amount of groups for a class this size is " + groupCount + " (recommended group size is 5).";
-                        }
-                        else
-                        {
-                            groupCount = 1;
-                            NumberOfGroupsDropDownList.SelectedValue = groupCount.ToString();
-                            RecommendedGroupAmountLabel.Text = "You have " + instructorCourse.Students.Count + " students. The recommended amount of groups for a class this size is " + groupCount + " (recommended group size is 5).";
-                        }
-
-
-
-                        CreateGroupsPanel.Visible = true;
-                        ListPanel.Visible = false;
-                    }
-                    else
-                    {
-                        CreateGroupsPanel.Visible = false;
-
-                        List<Student> ungroupedStudents = GrouperMethods.GetUngroupedStudents(InstructorCourseID);
-                        if (ungroupedStudents.Count == 0)
-                        {
-                            ListPanel.Visible = true;
-                            GroupingPanel.Visible = false;
-                        }
-                        else
-                        {
-                            ListPanel.Visible = false;
-                            GroupingPanel.Visible = true;
-                        }
-                    }
+                    group.Name = "Group " + group.GroupNumber;
+                    GrouperMethods.UpdateGroup(group);
                 }
 
-                if (instructorCourse != null)
-                {
+                _InstructorCourse = null;
 
-                    Course course = GrouperMethods.GetCourse(instructorCourse.CourseID);
+                GroupsGridView_BindGridView();
 
-                    CourseNameLabel.Text = course.FullName;
-
-                    LanguagesDropDownList.DataSource = Languages;
-                    LanguagesDropDownList.DataBind();
-
-                    RolesDropDownList.DataSource = Roles;
-                    RolesDropDownList.DataBind();
-
-                    GroupsRepeater_BindRepeater();
-                    GroupsGridView_BindGridView();
-                }
+                MessageBox("Group Deleted", "The group has been deleted.", "Okay");
             }
-
-            if (InstructorCourse != null)
+            else if (!string.IsNullOrEmpty(SelectedStudentIDHiddenField.Value))
             {
+                int studentID = int.Parse(SelectedStudentIDHiddenField.Value);
+
+                Student student = InstructorCourse.Students.FirstOrDefault(x => x.StudentID == studentID);
+
+                GrouperMethods.DeleteGroupMember(studentID);
+
+                _InstructorCourse = null;
+
+                GroupsGridView_BindGridView();
+
+                MessageBox("Group Member Removed", "'" + student.FirstName + " " + student.LastName + "' has been removed from their group.", "Okay");
+            }
+            else
+            {
+                foreach (Group group in InstructorCourse.Groups)
+                {
+                    GrouperMethods.DeleteGroup(group.GroupID);
+                }
+
                 StudentsGridView_BindGridView();
+                GroupsRepeater_BindRepeater();
+
+                ListPanel.Visible = false;
+                GroupingPanel.Visible = false;
+
+                int groupCount = InstructorCourse.Students.Count / RECOMMENDED_GROUP_SIZE;
+
+                if (groupCount > 0)
+                {
+                    NumberOfGroupsDropDownList.SelectedValue = groupCount.ToString();
+                }
+                else
+                {
+                    NumberOfGroupsDropDownList.SelectedValue = 1.ToString();
+                    groupCount = 1;
+                }
+
+                RecommendedGroupAmountLabel.Text = "You have " + InstructorCourse.Students.Count + " students. The recommended amount of groups for a class this size is " + groupCount + " (recommended group size is 5).";
+                CreateGroupsPanel.Visible = true;
+
+                MessageBox("Groups Deleted", "All groups have been deleted.", "Okay");
             }
         }
+
+        #endregion
+
+        #region Ajax Methods
 
         [WebMethod]
         [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
@@ -311,10 +385,7 @@ namespace GroupBuilderAdmin
         [WebMethod]
         public static Student[] GetGroups(int instructorCourseID)
         {
-
             InstructorCourse instructorCourse = GrouperMethods.GetInstructorCourse(instructorCourseID);
-
-
             return instructorCourse.Groups[0].Members.ToArray();
         }
 
@@ -416,45 +487,22 @@ namespace GroupBuilderAdmin
         {
             List<Student> students = GrouperMethods.GetUngroupedStudents((int)instructorCourseID);
 
-            //if (sortLanguageID > 0)
-            //{
-            //    students = students.OrderByDescending(x => x.Languages.Exists(y => y.LanguageID == sortLanguageID)).ToList();
-            //}
+            if (sortLanguageID > 0)
+            {
+                students = students.OrderByDescending(x => x.Languages.Exists(y => y.LanguageID == sortLanguageID)).ToList();
+            }
 
             return students.ToArray();
         }
 
-        protected void GroupsRepeater_BindRepeater()
-        {
+        #endregion
 
-            GroupsRepeater.DataSource = InstructorCourse.Groups;
-            GroupsRepeater.DataBind();
-        }
+        #region Create Groups View
 
-        protected void GroupsGridView_BindGridView()
-        {
-            if (InstructorCourse.Groups.Count > 0)
-            {
-                NoGroupsPanel.Visible = false;
-            }
-            else
-            {
-                NoGroupsPanel.Visible = true;
-            }
-            GroupsGridView.DataSource = InstructorCourse.Groups;
-            GroupsGridView.DataBind();
-        }
-
-        protected void StudentsGridView_BindGridView()
-        {
-            StudentsGridView.DataSource = GrouperMethods.GetUngroupedStudents(InstructorCourse.InstructorCourseID);
-            StudentsGridView.DataBind();
-        }
-
+        // Creates the selected number of groups
         protected void BuildGroupsLinkButton_Click(object sender, EventArgs e)
         {
             InstructorCourse course = GrouperMethods.GetInstructorCourse(InstructorCourseID);
-
 
             int numberOfGroups = int.Parse(NumberOfGroupsDropDownList.SelectedValue);
 
@@ -484,59 +532,53 @@ namespace GroupBuilderAdmin
             GroupsRepeater_BindRepeater();
         }
 
-        protected void CreateGroupsLinkButton_Click(object sender, EventArgs e)
-        {
+        #endregion
 
+        #region Edit Groups View
+
+        #region StudentsGridView
+
+        protected void StudentsGridView_BindGridView()
+        {
+            StudentsGridView.DataSource = GrouperMethods.GetUngroupedStudents(InstructorCourse.InstructorCourseID);
+            StudentsGridView.DataBind();
         }
 
-        protected void CancelBuildGroupsLinkButton_Click(object sender, EventArgs e)
+        #endregion
+
+        #region GroupsRepeater 
+
+        // Closes Bootstrap rows after each third group
+        protected void GroupsRepeater_PreRender(object sender, EventArgs e)
         {
-
-        }
-
-        protected void ReturnToStudentsLinkButton_Click(object sender, EventArgs e)
-        {
-            Response.Redirect("~/Students.aspx?ID=" + InstructorCourseID);
-        }
-
-        protected void ResetGroupsLinkButton_Click(object sender, EventArgs e)
-        {
-            ClearGroups();
-
-            StudentsGridView_BindGridView();
-            GroupsRepeater_BindRepeater();
-        }
-
-        protected void ClearGroups()
-        {
-            //InstructorCourse course = GrouperMethods.GetInstructorCourse(InstructorCourseID);
-
-            foreach (Group group in InstructorCourse.Groups)
+            for (int i = 0; i < GroupsRepeater.Items.Count; i++)
             {
-                foreach (Student member in group.Members)
+                Literal rowOpenLiteral = (Literal)GroupsRepeater.Items[i].FindControl("RowOpenLiteral");
+                Literal rowCloseLiteral = (Literal)GroupsRepeater.Items[i].FindControl("RowCloseLiteral");
+
+                if ((i) % 3 == 0)
                 {
-                    GrouperMethods.DeleteGroupMember(member.StudentID);
+                    rowOpenLiteral.Text = @"<div class=""row"">";
+                }
+
+                if ((i % 3 == 2) || (i == GroupsRepeater.Items.Count - 1))
+                {
+                    rowCloseLiteral.Text = "</div>";
                 }
             }
         }
 
-        protected void DeleteAllGroupsLinkButton_Click(object sender, EventArgs e)
+        // Binds the Groups repeater control
+        protected void GroupsRepeater_BindRepeater()
         {
-            //InstructorCourse course = GrouperMethods.GetInstructorCourse(InstructorCourseID);
-            GroupsRepeater_BindRepeater();
-            ConfirmDeleteAllGroupsMessageBox();
-
+            GroupsRepeater.DataSource = InstructorCourse.Groups;
+            GroupsRepeater.DataBind();
         }
 
-        protected void StudentsGridView_RowDataBound(object sender, GridViewRowEventArgs e)
-        {
-
-        }
-
+        // Called when each group is bound
         protected void GroupsRepeater_ItemDataBound(object sender, RepeaterItemEventArgs e)
         {
             int groupIndex = e.Item.ItemIndex + 1;
-
 
             GridView groupMembersGridView = (GridView)e.Item.FindControl("GroupMembersGridView");
 
@@ -614,56 +656,68 @@ namespace GroupBuilderAdmin
                     statsLabel.Text = " ";
                 }
             }
-
         }
 
-        protected void LanguagesDropDownList_SelectedIndexChanged(object sender, EventArgs e)
+        // Provides event handling for controls within Groups
+        protected void GroupsRepeater_ItemCommand(object source, RepeaterCommandEventArgs e)
         {
-            if (LanguagesDropDownList.SelectedIndex > 0)
+            Label groupNameLabel = (Label)e.Item.FindControl("GroupNameLabel");
+            TextBox groupNameTextBox = (TextBox)e.Item.FindControl("GroupNameTextBox");
+            LinkButton editNameLinkButton = (LinkButton)e.Item.FindControl("EditGroupNameLinkButton");
+            LinkButton saveNameLinkButton = (LinkButton)e.Item.FindControl("SaveGroupNameLinkButton");
+            LinkButton cancelEditNameLinkButton = (LinkButton)e.Item.FindControl("CancelEditGroupNameLinkButton");
+
+            int groupID = int.Parse(e.CommandArgument.ToString());
+            Group group = GrouperMethods.GetGroup(groupID);
+
+            if (e.CommandName == "edit_group_name")
             {
-                int languageID = int.Parse(LanguagesDropDownList.SelectedValue);
+                groupNameLabel.Visible = false;
+                groupNameTextBox.Visible = true;
 
-                SortLanguageHiddenField.Value = languageID.ToString();
+                groupNameTextBox.Text = group.Name;
 
-                List<Student> students = GrouperMethods.GetUngroupedStudents(InstructorCourseID);
+                editNameLinkButton.Visible = false;
+                saveNameLinkButton.Visible = true;
+                cancelEditNameLinkButton.Visible = true;
+            }
+            else if (e.CommandName == "cancel_edit_group_name")
+            {
+                groupNameLabel.Visible = true;
+                groupNameTextBox.Visible = false;
+                editNameLinkButton.Visible = true;
+                saveNameLinkButton.Visible = false;
+                cancelEditNameLinkButton.Visible = false;
+            }
+            else if (e.CommandName == "save_group_name")
+            {
+                groupNameLabel.Visible = true;
+                groupNameTextBox.Visible = false;
+                editNameLinkButton.Visible = true;
+                saveNameLinkButton.Visible = false;
+                cancelEditNameLinkButton.Visible = false;
 
-                students = students.OrderByDescending(x => x.Languages.Exists(y => y.LanguageID == languageID)).ToList();
+                if (string.IsNullOrEmpty(groupNameTextBox.Text.Trim()))
+                {
+                    group.Name = "Group " + group.GroupNumber.ToString();
+                }
+                else
+                {
+                    group.Name = groupNameTextBox.Text.Trim();
+                }
 
-                StudentsGridView.DataSource = students;
-                StudentsGridView.DataBind();
-
+                GrouperMethods.UpdateGroup(group);
+                groupNameLabel.Text = group.Name;
                 GroupsRepeater_BindRepeater();
             }
         }
 
-        protected void GPADropDownList_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (GPADropDownList.SelectedIndex > 0)
-            {
-                List<Student> students = GrouperMethods.GetUngroupedStudents(InstructorCourseID);
 
-                if (GPADropDownList.SelectedIndex == 1)
-                {
-                    SortGPAHiddenField.Value = "low";
+        #endregion
 
-                    students = students.OrderBy(x => x.GPA).ToList();
+        #region Grouping Tools
 
-                    StudentsGridView.DataSource = students;
-                    StudentsGridView.DataBind();
-                }
-                else if (GPADropDownList.SelectedIndex == 2)
-                {
-                    SortGPAHiddenField.Value = "high";
-
-                    students = students.OrderByDescending(x => x.GPA).ToList();
-
-                    StudentsGridView.DataSource = students;
-                    StudentsGridView.DataBind();
-                }
-                GroupsRepeater_BindRepeater();
-            }
-        }
-
+        // Automatically generates groups
         protected void AutoGenerateGroupsLinkButton_Click(object sender, EventArgs e)
         {
             ClearGroups();
@@ -735,28 +789,88 @@ namespace GroupBuilderAdmin
 
             StudentsGridView_BindGridView();
             GroupsRepeater_BindRepeater();
-
         }
 
-        protected void GroupsRepeater_PreRender(object sender, EventArgs e)
+        // Clears groups/rebinds controls
+        protected void ResetGroupsLinkButton_Click(object sender, EventArgs e)
         {
-            for (int i = 0; i < GroupsRepeater.Items.Count; i++)
+            ClearGroups();
+
+            StudentsGridView_BindGridView();
+            GroupsRepeater_BindRepeater();
+        }
+
+        // Clears all group members from their respective groups
+        protected void ClearGroups()
+        {
+            foreach (Group group in InstructorCourse.Groups)
             {
-                Literal rowOpenLiteral = (Literal)GroupsRepeater.Items[i].FindControl("RowOpenLiteral");
-                Literal rowCloseLiteral = (Literal)GroupsRepeater.Items[i].FindControl("RowCloseLiteral");
-
-                if ((i) % 3 == 0)
+                foreach (Student member in group.Members)
                 {
-                    rowOpenLiteral.Text = @"<div class=""row"">";
-                }
-
-                if ((i % 3 == 2) || (i == GroupsRepeater.Items.Count - 1))
-                {
-                    rowCloseLiteral.Text = "</div>";
+                    GrouperMethods.DeleteGroupMember(member.StudentID);
                 }
             }
         }
 
+        // Displays the confirm delete groups dialog box
+        protected void DeleteAllGroupsLinkButton_Click(object sender, EventArgs e)
+        {
+            GroupsRepeater_BindRepeater();
+            ConfirmDeleteAllGroupsMessageBox();
+        }
+
+        #region Sorting
+
+        // Sorts ungrouped students by language
+        protected void LanguagesDropDownList_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (LanguagesDropDownList.SelectedIndex > 0)
+            {
+                int languageID = int.Parse(LanguagesDropDownList.SelectedValue);
+
+                SortLanguageHiddenField.Value = languageID.ToString();
+
+                List<Student> students = GrouperMethods.GetUngroupedStudents(InstructorCourseID);
+
+                students = students.OrderByDescending(x => x.Languages.Exists(y => y.LanguageID == languageID)).ToList();
+
+                StudentsGridView.DataSource = students;
+                StudentsGridView.DataBind();
+
+                GroupsRepeater_BindRepeater();
+            }
+        }
+
+        // Sorts ungrouped students by GPA
+        protected void GPADropDownList_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (GPADropDownList.SelectedIndex > 0)
+            {
+                List<Student> students = GrouperMethods.GetUngroupedStudents(InstructorCourseID);
+
+                if (GPADropDownList.SelectedIndex == 1)
+                {
+                    SortGPAHiddenField.Value = "low";
+
+                    students = students.OrderBy(x => x.GPA).ToList();
+
+                    StudentsGridView.DataSource = students;
+                    StudentsGridView.DataBind();
+                }
+                else if (GPADropDownList.SelectedIndex == 2)
+                {
+                    SortGPAHiddenField.Value = "high";
+
+                    students = students.OrderByDescending(x => x.GPA).ToList();
+
+                    StudentsGridView.DataSource = students;
+                    StudentsGridView.DataBind();
+                }
+                GroupsRepeater_BindRepeater();
+            }
+        }
+
+        // Sorts ungrouped students by Role
         protected void RolesDropDownList_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (RolesDropDownList.SelectedIndex > 0)
@@ -776,304 +890,15 @@ namespace GroupBuilderAdmin
             }
         }
 
-        protected void GroupsRepeater_ItemCommand(object source, RepeaterCommandEventArgs e)
-        {
-            Label groupNameLabel = (Label)e.Item.FindControl("GroupNameLabel");
-            TextBox groupNameTextBox = (TextBox)e.Item.FindControl("GroupNameTextBox");
-            LinkButton editNameLinkButton = (LinkButton)e.Item.FindControl("EditGroupNameLinkButton");
-            LinkButton saveNameLinkButton = (LinkButton)e.Item.FindControl("SaveGroupNameLinkButton");
-            LinkButton cancelEditNameLinkButton = (LinkButton)e.Item.FindControl("CancelEditGroupNameLinkButton");
+        #endregion
 
-            int groupID = int.Parse(e.CommandArgument.ToString());
-            Group group = GrouperMethods.GetGroup(groupID);
+        #endregion
 
-            if (e.CommandName == "edit_group_name")
-            {
-                groupNameLabel.Visible = false;
-                groupNameTextBox.Visible = true;
+        #endregion
 
-                groupNameTextBox.Text = group.Name;
+        #region Group List View
 
-                editNameLinkButton.Visible = false;
-                saveNameLinkButton.Visible = true;
-                cancelEditNameLinkButton.Visible = true;
-            }
-            else if (e.CommandName == "cancel_edit_group_name")
-            {
-                groupNameLabel.Visible = true;
-                groupNameTextBox.Visible = false;
-                editNameLinkButton.Visible = true;
-                saveNameLinkButton.Visible = false;
-                cancelEditNameLinkButton.Visible = false;
-            }
-            else if (e.CommandName == "save_group_name")
-            {
-                groupNameLabel.Visible = true;
-                groupNameTextBox.Visible = false;
-                editNameLinkButton.Visible = true;
-                saveNameLinkButton.Visible = false;
-                cancelEditNameLinkButton.Visible = false;
-
-                if (string.IsNullOrEmpty(groupNameTextBox.Text.Trim()))
-                {
-                    group.Name = "Group " + group.GroupNumber.ToString();
-                }
-                else
-                {
-                    group.Name = groupNameTextBox.Text.Trim();
-                }
-
-                GrouperMethods.UpdateGroup(group);
-                groupNameLabel.Text = group.Name;
-                GroupsRepeater_BindRepeater();
-            }
-        }
-
-        protected void GroupsGridView_RowDataBound(object sender, GridViewRowEventArgs e)
-        {
-            if (e.Row.RowType == DataControlRowType.DataRow)
-            {
-                if (e.Row.RowState == DataControlRowState.Normal || e.Row.RowState == DataControlRowState.Alternate)
-                {
-                    int groupID = Convert.ToInt32(GroupsGridView.DataKeys[e.Row.RowIndex].Values[0]);
-
-                    GridView groupMembersGridView = (GridView)e.Row.FindControl("GroupMembersGridView");
-                    Group group = InstructorCourse.Groups.FirstOrDefault(x => x.GroupID == groupID);
-
-                    if (group != null)
-                    {
-                        groupMembersGridView.DataSource = group.Members;
-                        groupMembersGridView.DataBind();
-                    }
-
-                    HyperLink emailGroupHyperLink = (HyperLink)e.Row.FindControl("EmailGroupHyperLink");
-                    LinkButton editLinkButton = (LinkButton)e.Row.FindControl("EditLinkButton");
-                    LinkButton removeLinkButton = (LinkButton)e.Row.FindControl("RemoveLinkButton");
-
-                    string link = "mailto:";
-                    foreach (Student member in group.Members)
-                    {
-                        link += member.DuckID + "@uoregon.edu,";
-                    }
-                    link = link.Substring(0, link.Length - 1);
-
-                    if (!string.IsNullOrEmpty(group.Name))
-                    {
-                        link += "?subject=" + group.Name;
-                    }
-                    else
-                    {
-                        link += "?subject=Group " + group.GroupNumber.ToString();
-                    }
-
-                    emailGroupHyperLink.NavigateUrl = link;
-
-                    if (GroupsGridView.EditIndex > 0)
-                    {
-                        emailGroupHyperLink.Visible = false;
-                        editLinkButton.Visible = false;
-                        removeLinkButton.Visible = false;
-                    }
-                    
-                }
-                else if(e.Row.RowState == DataControlRowState.Edit)
-                {
-                    e.Row.CssClass = "selected";
-                    int groupID = Convert.ToInt32(GroupsGridView.DataKeys[e.Row.RowIndex].Values[0]);
-
-                    GridView groupMembersGridView = (GridView)e.Row.FindControl("EditGroupMembersGridView");
-                    Group group = InstructorCourse.Groups.FirstOrDefault(x => x.GroupID == groupID);
-
-                    if (group != null)
-                    {
-                        groupMembersGridView.DataSource = group.Members;
-                        groupMembersGridView.DataBind();
-                    }
-                }
-            }
-        }
-
-        protected void EditGroupsLinkButton_Click(object sender, EventArgs e)
-        {
-            ListPanel.Visible = false;
-            GroupingPanel.Visible = true;
-            GroupsRepeater_BindRepeater();
-        }
-
-        protected void GroupListLinkButton_Click(object sender, EventArgs e)
-        {
-            ListPanel.Visible = true;
-            GroupingPanel.Visible = false;
-            GroupsGridView_BindGridView();
-        }
-
-        protected void GroupMembersGridView_RowCommand(object sender, GridViewCommandEventArgs e)
-        {
-            int studentID = int.Parse(e.CommandArgument.ToString());
-
-            if(e.CommandName == "delete_group_member")
-            {
-                Student student = GrouperMethods.GetStudent(studentID);
-
-                if(student != null)
-                {
-                    ConfirmDeleteMessageBox(student);
-                }
-            }
-        }
-
-        protected void MessageBoxCreateLinkButton_Click(object sender, EventArgs e)
-        {
-            if(!string.IsNullOrEmpty(SelectedGroupIDHiddenField.Value))
-            {
-                int groupID = int.Parse(SelectedGroupIDHiddenField.Value);
-
-                Group group = InstructorCourse.Groups.FirstOrDefault(x => x.GroupID == groupID);
-
-                if (group != null)
-                {
-                    foreach (Student member in group.Members)
-                    {
-                        GrouperMethods.DeleteGroupMember(member.StudentID);
-                    }
-                    group.Name = "Group " + group.GroupNumber;
-                    GrouperMethods.UpdateGroup(group);
-                }
-
-                _InstructorCourse = null;
-
-                GroupsGridView_BindGridView();
-
-                MessageBox("Group Deleted", "The group has been deleted.", "Okay");
-            }
-            else if(!string.IsNullOrEmpty(SelectedStudentIDHiddenField.Value))
-            {
-                int studentID = int.Parse(SelectedStudentIDHiddenField.Value);
-
-                Student student = InstructorCourse.Students.FirstOrDefault(x => x.StudentID == studentID);
-
-                GrouperMethods.DeleteGroupMember(studentID);
-
-                _InstructorCourse = null;
-
-                GroupsGridView_BindGridView();
-
-                MessageBox("Group Member Removed", "'" + student.FirstName + " " + student.LastName + "' has been removed from their group.", "Okay");
-            }
-            else
-            {
-                foreach (Group group in InstructorCourse.Groups)
-                {
-                    GrouperMethods.DeleteGroup(group.GroupID);
-                }
-
-                StudentsGridView_BindGridView();
-                GroupsRepeater_BindRepeater();
-
-                ListPanel.Visible = false;
-                GroupingPanel.Visible = false;
-
-                int groupCount = InstructorCourse.Students.Count / RECOMMENDED_GROUP_SIZE;
-
-                if (groupCount > 0)
-                {
-                    NumberOfGroupsDropDownList.SelectedValue = groupCount.ToString();
-                }
-                else
-                {
-                    NumberOfGroupsDropDownList.SelectedValue = 1.ToString();
-                    groupCount = 1;
-                }
-
-                RecommendedGroupAmountLabel.Text = "You have " + InstructorCourse.Students.Count + " students. The recommended amount of groups for a class this size is " + groupCount + " (recommended group size is 5).";
-                CreateGroupsPanel.Visible = true;
-
-                MessageBox("Groups Deleted", "All groups have been deleted.", "Okay");
-            }
-        }
-
-        protected void GroupsGridView_RowCommand(object sender, GridViewCommandEventArgs e)
-        {
-            int groupID = int.Parse(e.CommandArgument.ToString());
-
-            if (e.CommandName == "delete_group")
-            {
-                Group group = InstructorCourse.Groups.FirstOrDefault(x => x.GroupID == groupID);
-
-                if (group != null)
-                {
-                    ConfirmDeleteMessageBox(group);
-                }
-            }
-            if(e.CommandName == "edit_group")
-            {
-                GroupsGridView.DataSource = InstructorCourse.Groups;
-
-                GridViewRow gvr = (GridViewRow)(((LinkButton)e.CommandSource).NamingContainer);
-
-                int RowIndex = gvr.RowIndex;
-
-                GroupsGridView.EditIndex = RowIndex;
-
-                GroupsGridView.DataBind();
-            }
-            if(e.CommandName == "cancel_edit_group")
-            {
-                GroupsGridView.DataSource = InstructorCourse.Groups;
-
-                GroupsGridView.EditIndex = -1;
-
-                GroupsGridView.DataBind();
-            }
-            if(e.CommandName == "save_group")
-            {
-                Group group = InstructorCourse.Groups.FirstOrDefault(x => x.GroupID == groupID);
-
-                GridViewRow row = (GridViewRow)(((LinkButton)e.CommandSource).NamingContainer);
-
-                TextBox nameTextBox = (TextBox)row.FindControl("EditGroupNameTextBox");
-                group.Name = nameTextBox.Text.Trim();
-
-                TextBox notesTextBox = (TextBox)row.FindControl("EditGroupNotesTextBox");
-                group.Notes = notesTextBox.Text.Trim();
-
-                GrouperMethods.UpdateGroup(group);
-                _InstructorCourse = null;
-
-                GroupsGridView.DataSource = InstructorCourse.Groups;
-
-                GroupsGridView.EditIndex = -1;
-
-                GroupsGridView.DataBind();
-            }
-        }
-
-        protected void GroupsGridView_RowEditing(object sender, GridViewEditEventArgs e)
-        {
-
-        }
-
-        protected void GroupsGridView_RowCancelingEdit(object sender, GridViewCancelEditEventArgs e)
-        {
-
-        }
-
-        protected void GroupMembersGridView_RowDataBound(object sender, GridViewRowEventArgs e)
-        {
-            if (e.Row.RowType == DataControlRowType.DataRow)
-            {
-                if (e.Row.RowState == DataControlRowState.Normal || e.Row.RowState == DataControlRowState.Alternate)
-                {
-                    LinkButton removeLinkButton = (LinkButton)e.Row.FindControl("RemoveGroupMemberLinkButton");
-
-                    if (GroupsGridView.EditIndex > 0)
-                    {
-                        removeLinkButton.Visible = false;
-                    }
-
-                }
-            }
-        }
+        #region Export CSV
 
         protected void ExportGroupsLinkButton_Click(object sender, EventArgs e)
         {
@@ -1092,7 +917,7 @@ namespace GroupBuilderAdmin
 
             csv += InstructorCourse.Course.FullName + ",";
 
-            if(!string.IsNullOrEmpty(InstructorCourse.TermName))
+            if (!string.IsNullOrEmpty(InstructorCourse.TermName))
             {
                 csv += InstructorCourse.TermName + ",";
             }
@@ -1101,7 +926,7 @@ namespace GroupBuilderAdmin
                 csv += ",";
             }
 
-            if(InstructorCourse.Year > 0)
+            if (InstructorCourse.Year > 0)
             {
                 csv += InstructorCourse.Year.ToString() + ",";
             }
@@ -1118,8 +943,8 @@ namespace GroupBuilderAdmin
             {
                 csv += ",";
             }
-            
-            if(!string.IsNullOrEmpty(InstructorCourse.DaysOfWeek))
+
+            if (!string.IsNullOrEmpty(InstructorCourse.DaysOfWeek))
             {
                 csv += InstructorCourse.DaysOfWeek + ",";
             }
@@ -1170,13 +995,13 @@ namespace GroupBuilderAdmin
                 }
 
                 csv += ",,,,,";
-                    
+
                 csv += group.Notes + ",\r\n";
 
-                
-                foreach(Student student in group.Members)
+
+                foreach (Student student in group.Members)
                 {
-                    csv += ",,"; 
+                    csv += ",,";
                     csv += student.DuckID + ",";
                     csv += student.FirstName + " " + student.LastName + ",";
                     csv += student.UOID.ToString() + ",";
@@ -1190,7 +1015,7 @@ namespace GroupBuilderAdmin
 
             List<Student> ungroupedStudents = GrouperMethods.GetUngroupedStudents(InstructorCourseID);
 
-            if(ungroupedStudents.Count > 0)
+            if (ungroupedStudents.Count > 0)
             {
                 csv += ",,,,,,,,";
 
@@ -1217,7 +1042,6 @@ namespace GroupBuilderAdmin
 
             if (numberExported > 0)
             {
-
                 Response.ContentType = "text/csv";
                 Response.Headers["Content-Disposition"] = "inline; filename=groups.csv";
 
@@ -1225,13 +1049,218 @@ namespace GroupBuilderAdmin
                 Response.End();
 
                 MessageBox("Student Records Exported", "Groups were sucessfully exported.", "Okay");
-
-
             }
             else
             {
                 MessageBox("Unable to Export Groups", "There do not appear to be any groups to export.  Please create and build groups before exporting.", "Okay");
             }
         }
+
+        #endregion
+
+        #region GroupsGridView  
+
+        // Binds the Group List GridView
+        protected void GroupsGridView_BindGridView()
+        {
+            if (InstructorCourse.Groups.Count > 0)
+            {
+                NoGroupsPanel.Visible = false;
+            }
+            else
+            {
+                NoGroupsPanel.Visible = true;
+            }
+            GroupsGridView.DataSource = InstructorCourse.Groups;
+            GroupsGridView.DataBind();
+        }
+
+        // Renders the proper output for each row
+        protected void GroupsGridView_RowDataBound(object sender, GridViewRowEventArgs e)
+        {
+            if (e.Row.RowType == DataControlRowType.DataRow)
+            {
+                if (e.Row.RowState == DataControlRowState.Normal || e.Row.RowState == DataControlRowState.Alternate)
+                {
+                    int groupID = Convert.ToInt32(GroupsGridView.DataKeys[e.Row.RowIndex].Values[0]);
+
+                    GridView groupMembersGridView = (GridView)e.Row.FindControl("GroupMembersGridView");
+                    Group group = InstructorCourse.Groups.FirstOrDefault(x => x.GroupID == groupID);
+
+                    if (group != null)
+                    {
+                        groupMembersGridView.DataSource = group.Members;
+                        groupMembersGridView.DataBind();
+                    }
+
+                    HyperLink emailGroupHyperLink = (HyperLink)e.Row.FindControl("EmailGroupHyperLink");
+                    LinkButton editLinkButton = (LinkButton)e.Row.FindControl("EditLinkButton");
+                    LinkButton removeLinkButton = (LinkButton)e.Row.FindControl("RemoveLinkButton");
+
+                    string link = "mailto:";
+                    foreach (Student member in group.Members)
+                    {
+                        link += member.DuckID + "@uoregon.edu,";
+                    }
+                    link = link.Substring(0, link.Length - 1);
+
+                    if (!string.IsNullOrEmpty(group.Name))
+                    {
+                        link += "?subject=" + group.Name;
+                    }
+                    else
+                    {
+                        link += "?subject=Group " + group.GroupNumber.ToString();
+                    }
+
+                    emailGroupHyperLink.NavigateUrl = link;
+
+                    if (GroupsGridView.EditIndex > 0)
+                    {
+                        emailGroupHyperLink.Visible = false;
+                        editLinkButton.Visible = false;
+                        removeLinkButton.Visible = false;
+                    }
+
+                }
+                else if (e.Row.RowState == DataControlRowState.Edit)
+                {
+                    e.Row.CssClass = "selected";
+                    int groupID = Convert.ToInt32(GroupsGridView.DataKeys[e.Row.RowIndex].Values[0]);
+
+                    GridView groupMembersGridView = (GridView)e.Row.FindControl("EditGroupMembersGridView");
+                    Group group = InstructorCourse.Groups.FirstOrDefault(x => x.GroupID == groupID);
+
+                    if (group != null)
+                    {
+                        groupMembersGridView.DataSource = group.Members;
+                        groupMembersGridView.DataBind();
+                    }
+                }
+            }
+        }
+
+        // Handles commands from the controls in each row
+        protected void GroupsGridView_RowCommand(object sender, GridViewCommandEventArgs e)
+        {
+            int groupID = int.Parse(e.CommandArgument.ToString());
+
+            if (e.CommandName == "delete_group")
+            {
+                Group group = InstructorCourse.Groups.FirstOrDefault(x => x.GroupID == groupID);
+
+                if (group != null)
+                {
+                    ConfirmDeleteMessageBox(group);
+                }
+            }
+            else if (e.CommandName == "edit_group")
+            {
+                GroupsGridView.DataSource = InstructorCourse.Groups;
+
+                GridViewRow gvr = (GridViewRow)(((LinkButton)e.CommandSource).NamingContainer);
+
+                int RowIndex = gvr.RowIndex;
+
+                GroupsGridView.EditIndex = RowIndex;
+
+                GroupsGridView.DataBind();
+            }
+            else if (e.CommandName == "cancel_edit_group")
+            {
+                GroupsGridView.DataSource = InstructorCourse.Groups;
+
+                GroupsGridView.EditIndex = -1;
+
+                GroupsGridView.DataBind();
+            }
+            else if (e.CommandName == "save_group")
+            {
+                Group group = InstructorCourse.Groups.FirstOrDefault(x => x.GroupID == groupID);
+
+                GridViewRow row = (GridViewRow)(((LinkButton)e.CommandSource).NamingContainer);
+
+                TextBox nameTextBox = (TextBox)row.FindControl("EditGroupNameTextBox");
+                group.Name = nameTextBox.Text.Trim();
+
+                TextBox notesTextBox = (TextBox)row.FindControl("EditGroupNotesTextBox");
+                group.Notes = notesTextBox.Text.Trim();
+
+                GrouperMethods.UpdateGroup(group);
+                _InstructorCourse = null;
+
+                GroupsGridView.DataSource = InstructorCourse.Groups;
+
+                GroupsGridView.EditIndex = -1;
+
+                GroupsGridView.DataBind();
+            }
+        }
+
+        #region Group Members GridView
+
+        protected void GroupMembersGridView_RowDataBound(object sender, GridViewRowEventArgs e)
+        {
+            if (e.Row.RowType == DataControlRowType.DataRow)
+            {
+                if (e.Row.RowState == DataControlRowState.Normal || e.Row.RowState == DataControlRowState.Alternate)
+                {
+                    LinkButton removeLinkButton = (LinkButton)e.Row.FindControl("RemoveGroupMemberLinkButton");
+
+                    if (GroupsGridView.EditIndex > 0)
+                    {
+                        removeLinkButton.Visible = false;
+                    }
+
+                }
+            }
+        }
+
+        protected void GroupMembersGridView_RowCommand(object sender, GridViewCommandEventArgs e)
+        {
+            int studentID = int.Parse(e.CommandArgument.ToString());
+
+            if (e.CommandName == "delete_group_member")
+            {
+                Student student = GrouperMethods.GetStudent(studentID);
+
+                if (student != null)
+                {
+                    ConfirmDeleteMessageBox(student);
+                }
+            }
+        }
+
+        #endregion
+
+        #endregion
+
+        #endregion
+
+        #region Event Handlers
+
+        // Displays the Group List view
+        protected void GroupListLinkButton_Click(object sender, EventArgs e)
+        {
+            ListPanel.Visible = true;
+            GroupingPanel.Visible = false;
+            GroupsGridView_BindGridView();
+        }
+
+        // Displays the Edit Groups view
+        protected void EditGroupsLinkButton_Click(object sender, EventArgs e)
+        {
+            ListPanel.Visible = false;
+            GroupingPanel.Visible = true;
+            GroupsRepeater_BindRepeater();
+        }
+
+        // Returns the user to the Students page
+        protected void ReturnToStudentsLinkButton_Click(object sender, EventArgs e)
+        {
+            Response.Redirect("~/Students.aspx?ID=" + InstructorCourseID);
+        }
+
+        #endregion
     }
 }

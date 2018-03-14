@@ -2,8 +2,6 @@
 
 <asp:Content ID="BodyContent" ContentPlaceHolderID="MainContent" runat="server">
     <style>
-
-
         #sticky {
             width: 100%;
         }
@@ -17,6 +15,7 @@
             }
     </style>
     <script>
+        // Initialize the sticky group list and setup event handlers for drag and drop divs
         $(document).ready(function () {
             $(window).scroll(function () {
                 var distanceFromTop = $(document).scrollTop();
@@ -39,10 +38,9 @@
                 this.addEventListener('drop', OnDrop, false);
                 this.addEventListener('dragend', OnDragEnd, false);
             });
-
-
         })
 
+        // Callback function that updates groups after drag and drop
         function UpdateGroup(groupNumber) {
             var data = new Array();
             $("div .group div.selectedstudent").each(function (index) {
@@ -70,6 +68,7 @@
             });
         }
 
+        // Callback function that updates group stat calculations
         function UpdateStats(number) {
             var instructorCourseID = $("#MainContent_InstructorCourseIDHiddenField").val();
 
@@ -92,6 +91,7 @@
             });
         }
 
+        // Callback function that binds a group gridview
         function BindGridView(number) {
             var instructorCourseID = $("#MainContent_InstructorCourseIDHiddenField").val();
 
@@ -142,16 +142,13 @@
                         this.addEventListener('drop', OnDrop, false);
                         this.addEventListener('dragend', OnDragEnd, false);
                     });
-
-                    //BindStudentsGridView();
                 },
                 error: function (result) {
                 }
             });
         }
 
-        //data: "{'instructorCourseID':'" + instructorCourseID + "', 'sortLanguageID':'" + sortLanguageID + "'}",
-
+        // Callback function that binds the student list after a student is added back/removed
         function BindStudentsGridView() {
             var instructorCourseID = $("#MainContent_InstructorCourseIDHiddenField").val();
             var sortLanguageID = 0;
@@ -198,6 +195,7 @@
             });
         }
 
+        // Delete function that removes a student from a group (after dropped on another group)
         function DeleteStudent(groupNumber, studentID) {
             $.ajax({
                 type: 'POST',
@@ -215,6 +213,7 @@
             });
         }
 
+        // General necessary drag and drop event handling functions
         function OnDragStart(e) {
             this.style.opacity = '0.3';
             srcElement = this;
@@ -268,6 +267,7 @@
         }
     </script>
 
+    <!-- Modal Dialog -->
     <div class="modal fade" id="messageBox">
         <div class="modal-dialog">
             <asp:UpdatePanel ID="upModal" runat="server" ChildrenAsTriggers="false" UpdateMode="Conditional">
@@ -300,7 +300,6 @@
             </asp:UpdatePanel>
         </div>
     </div>
-
     <br />
     <asp:HiddenField ID="InstructorCourseIDHiddenField" runat="server" />
     <h3>Current Groups for
@@ -310,7 +309,6 @@
     <asp:HiddenField ID="SortGPAHiddenField" runat="server" />
     <asp:HiddenField ID="SortRoleHiddenField" runat="server" />
     <asp:LinkButton ID="ReturnToStudentsLinkButton" runat="server" CssClass="btn btn-default btn-sm" OnClick="ReturnToStudentsLinkButton_Click"><span class="fas fa-arrow-left"></span>&nbsp;&nbsp;Return to Students</asp:LinkButton>
-
 
     <asp:Panel ID="CreateGroupsPanel" runat="server" CssClass="panel panel-default">
         <asp:Panel ID="NoGroupsPanel" runat="server">
@@ -347,6 +345,7 @@
         </div>
     </asp:Panel>
     <br />
+
     <asp:Panel ID="GroupingPanel" runat="server" Visible="false">
         <asp:LinkButton ID="GroupListLinkButton" runat="server" CssClass="btn btn-default btn-sm float-right" OnClick="GroupListLinkButton_Click"><span class="fa fa-list-alt"></span>&nbsp;&nbsp;Group List</asp:LinkButton>
         <div class="container">
@@ -354,7 +353,7 @@
                 <div class="col-md-3">
                     <div>
                         <h4>Student List</h4>
-                        <asp:GridView ID="StudentsGridView" runat="server" CssClass="table table-bordered table-condensed small" AutoGenerateColumns="false" DataKeyNames="StudentID" OnRowDataBound="StudentsGridView_RowDataBound" ShowHeader="false">
+                        <asp:GridView ID="StudentsGridView" runat="server" CssClass="table table-bordered table-condensed small" AutoGenerateColumns="false" DataKeyNames="StudentID" ShowHeader="false">
                             <EmptyDataTemplate>
                                 &nbsp;
                             </EmptyDataTemplate>
@@ -452,11 +451,9 @@
                                                                 </div>
                                                                 <div class="col-md-2">
                                                                     <a onclick='DeleteStudent(<%# ((RepeaterItem)((GridViewRow)Container).NamingContainer.NamingContainer).ItemIndex.ToString() + ", " + Eval("StudentID") %>);' class="btn btn-danger btn-xs float-right"><span class="fas fa-times"></span></a>
-
                                                                 </div>
                                                             </div>
                                                         </div>
-
                                                     </ItemTemplate>
                                                 </asp:TemplateField>
                                             </Columns>
@@ -468,18 +465,17 @@
                         </asp:Repeater>
                     </div>
                 </div>
-
-
             </div>
         </div>
     </asp:Panel>
+
     <asp:Panel ID="ListPanel" runat="server">
         <div class="text-right">
             <asp:LinkButton ID="EditGroupsLinkButton" runat="server" CssClass="btn btn-default btn-sm" OnClick="EditGroupsLinkButton_Click"><span class="fa fa-table"></span>&nbsp;&nbsp;Edit Groups</asp:LinkButton>
             <asp:HyperLink ID="MailEntireClassLinkButton" runat="server" CssClass="btn btn-default btn-sm"><span class="fa fa-paper-plane"></span>&nbsp;&nbsp;Mail Entire Class</asp:HyperLink>
             <asp:LinkButton ID="ExportGroupsLinkButton" runat="server" CssClass="btn btn-default btn-sm" OnClick="ExportGroupsLinkButton_Click"><span class="fa fa-download"></span>&nbsp;&nbsp;Export to CSV</asp:LinkButton>
         </div>
-        <asp:GridView ID="GroupsGridView" runat="server" CssClass="table table-bordered table-condensed table-striped" AutoGenerateColumns="false" OnRowDataBound="GroupsGridView_RowDataBound" OnRowCommand="GroupsGridView_RowCommand" DataKeyNames="GroupID" OnRowEditing="GroupsGridView_RowEditing" OnRowCancelingEdit="GroupsGridView_RowCancelingEdit">
+        <asp:GridView ID="GroupsGridView" runat="server" CssClass="table table-bordered table-condensed table-striped" AutoGenerateColumns="false" OnRowDataBound="GroupsGridView_RowDataBound" OnRowCommand="GroupsGridView_RowCommand" DataKeyNames="GroupID">
             <Columns>
                 <asp:TemplateField HeaderText="Number" HeaderStyle-Width="1%">
                     <ItemTemplate>
@@ -505,7 +501,7 @@
                     <ItemTemplate>
                         <asp:GridView ID="GroupMembersGridView" runat="server" CssClass="table table-bordered table-condensed small" AutoGenerateColumns="false" OnRowCommand="GroupMembersGridView_RowCommand" OnRowDataBound="GroupMembersGridView_RowDataBound">
                             <Columns>
-                                <asp:BoundField DataField="DuckID" HeaderText="DuckID" HeaderStyle-Width="10%"/>
+                                <asp:BoundField DataField="DuckID" HeaderText="DuckID" HeaderStyle-Width="10%" />
                                 <asp:TemplateField HeaderText="Name" HeaderStyle-Width="30%">
                                     <ItemTemplate>
                                         <asp:Label ID="StudentNameLabel" runat="server" Text='<%# Eval("FirstName") + " " + Eval("LastName") %>'></asp:Label>
@@ -532,7 +528,7 @@
                     <EditItemTemplate>
                         <asp:GridView ID="EditGroupMembersGridView" runat="server" CssClass="table table-bordered table-condensed small" AutoGenerateColumns="false">
                             <Columns>
-                                <asp:BoundField DataField="DuckID" HeaderStyle-Width="10%"/>
+                                <asp:BoundField DataField="DuckID" HeaderStyle-Width="10%" />
                                 <asp:TemplateField HeaderText="Name" HeaderStyle-Width="30%">
                                     <ItemTemplate>
                                         <asp:Label ID="StudentNameLabel" runat="server" Text='<%# Eval("FirstName") + " " + Eval("LastName") %>'></asp:Label>
@@ -565,17 +561,17 @@
                 <asp:TemplateField HeaderStyle-Width="1%">
                     <ItemTemplate>
                         <div class="btn-group-vertical">
-                        <asp:LinkButton ID="EditLinkButton" runat="server" CssClass="btn btn-default btn-xs" CommandName="edit_group" CommandArgument='<%# Eval("GroupID") %>'><span class="fas fa-pencil-alt"></span>&nbsp;&nbsp;Edit</asp:LinkButton>
-                        <asp:LinkButton ID="RemoveLinkButton" runat="server" CssClass="btn btn-danger btn-xs" CommandName="delete_group" CommandArgument='<%# Eval("GroupID") %>'><span class="fas fa-times"></span>&nbsp;&nbsp;Delete</asp:LinkButton>
-                        <asp:HyperLink ID="EmailGroupHyperLink" runat="server" CssClass="btn btn-default btn-xs"><span class="fa fa-paper-plane"></span>&nbsp;&nbsp;New Email</asp:HyperLink>
+                            <asp:LinkButton ID="EditLinkButton" runat="server" CssClass="btn btn-default btn-xs" CommandName="edit_group" CommandArgument='<%# Eval("GroupID") %>'><span class="fas fa-pencil-alt"></span>&nbsp;&nbsp;Edit</asp:LinkButton>
+                            <asp:LinkButton ID="RemoveLinkButton" runat="server" CssClass="btn btn-danger btn-xs" CommandName="delete_group" CommandArgument='<%# Eval("GroupID") %>'><span class="fas fa-times"></span>&nbsp;&nbsp;Delete</asp:LinkButton>
+                            <asp:HyperLink ID="EmailGroupHyperLink" runat="server" CssClass="btn btn-default btn-xs"><span class="fa fa-paper-plane"></span>&nbsp;&nbsp;New Email</asp:HyperLink>
                         </div>
-                        </ItemTemplate>
-                        <EditItemTemplate>
-                            <div class="btn-group-vertical">
+                    </ItemTemplate>
+                    <EditItemTemplate>
+                        <div class="btn-group-vertical">
                             <asp:LinkButton ID="SaveChangesLinkButton" runat="server" CssClass="btn btn-default btn-xs" CommandName="save_group" CommandArgument='<%# Eval("GroupID") %>'><span class="fa fa-save"></span>&nbsp;&nbsp;Save</asp:LinkButton>
                             <asp:LinkButton ID="CancelSaveChangesLinkButton" runat="server" CssClass="btn btn-default btn-xs" CommandName="cancel_edit_group" CommandArgument='<%# Eval("GroupID") %>'><span class="fa fa-ban"></span>&nbsp;&nbsp;Cancel</asp:LinkButton>
-                            </div>
-                        </EditItemTemplate>
+                        </div>
+                    </EditItemTemplate>
                 </asp:TemplateField>
             </Columns>
         </asp:GridView>
