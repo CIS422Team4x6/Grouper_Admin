@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
-using System.Web;
 
 namespace GroupBuilder 
 {
+
+    #region Classes
+
     [Serializable]
     public class Course
     {
@@ -533,6 +535,7 @@ namespace GroupBuilder
         public List<Student> Members { get; set; }
     }
 
+    #endregion
 
     public class GrouperMethods
     {
@@ -600,31 +603,19 @@ namespace GroupBuilder
             int instructorID = 0;
 
             SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
-            //con.Open();
-            //SqlCommand cmd = new SqlCommand(
-            //    @"SELECT *  
-            //    FROM Instructors    
-            //    WHERE DuckID = @DuckID;", con);
-            //cmd.Parameters.AddWithValue("@DuckID", instructor.DuckID);
-
-            //instructorID = Convert.ToInt32(cmd.ExecuteScalar());
-            //con.Close();
-            //if (instructorID == 0)
-            //{
-                SqlCommand cmd = new SqlCommand(
-                @"INSERT INTO Instructors    
-                    (DuckID, LastName, FirstName, IdentityUserID) 
-                    VALUES 
-                    (@DuckID, @LastName, @FirstName, @IdentityUserID);
-                    SELECT SCOPE_IDENTITY();", con);
-                cmd.Parameters.AddWithValue("@DuckID", instructor.DuckID ??(Object)DBNull.Value);
-                cmd.Parameters.AddWithValue("@LastName", instructor.LastName ?? (Object)DBNull.Value);
-                cmd.Parameters.AddWithValue("@FirstName", instructor.FirstName ?? (Object)DBNull.Value);
-                cmd.Parameters.AddWithValue("@IdentityUserID", instructor.IdentityUserID);
-                con.Open();
-                instructorID = Convert.ToInt32(cmd.ExecuteScalar());
-                con.Close();
-            //}
+            SqlCommand cmd = new SqlCommand(
+            @"INSERT INTO Instructors    
+                (DuckID, LastName, FirstName, IdentityUserID) 
+                VALUES 
+                (@DuckID, @LastName, @FirstName, @IdentityUserID);
+                SELECT SCOPE_IDENTITY();", con);
+            cmd.Parameters.AddWithValue("@DuckID", instructor.DuckID ??(Object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@LastName", instructor.LastName ?? (Object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@FirstName", instructor.FirstName ?? (Object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@IdentityUserID", instructor.IdentityUserID);
+            con.Open();
+            instructorID = Convert.ToInt32(cmd.ExecuteScalar());
+            con.Close();
             return instructorID;
         }
 
@@ -712,7 +703,6 @@ namespace GroupBuilder
 
         public static void UpdateInstructor(Instructor instructor)
         {
-
             SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
             SqlCommand cmd = new SqlCommand(
                 @"UPDATE Instructors 
@@ -726,7 +716,6 @@ namespace GroupBuilder
             cmd.Parameters.AddWithValue("@FirstName", instructor.FirstName ?? (Object)DBNull.Value);
             cmd.Parameters.AddWithValue("@LastName", instructor.LastName ?? (Object)DBNull.Value);
             cmd.Parameters.AddWithValue("@IdentityUserID", instructor.IdentityUserID ?? (Object)DBNull.Value);
-
             con.Open();
             cmd.ExecuteNonQuery();
             con.Close();
@@ -734,7 +723,6 @@ namespace GroupBuilder
 
         public static void DeleteInstructor(int instructorID)
         {
-
             SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
             SqlCommand cmd = new SqlCommand(
                 @"DELETE FROM Instructors WHERE InstructorID = @InstructorID;", con);
@@ -744,7 +732,6 @@ namespace GroupBuilder
             cmd.ExecuteNonQuery();
             con.Close();
         }
-
 
         #endregion
 
@@ -793,10 +780,8 @@ namespace GroupBuilder
             while (reader.Read())
             {
                 language = new ProgrammingLanguage();
-
                 language.LanguageID = GetSafeInteger(reader, "LanguageID");
                 language.Name = GetSafeString(reader, "Name");
-
             }
             con.Close();
 
@@ -821,7 +806,6 @@ namespace GroupBuilder
                 language.ProficiencyLevel = GetSafeInteger(reader, "ProficiencyRank");
 
                 languages.Add(language);
-
             }
             con.Close();
 
@@ -840,7 +824,6 @@ namespace GroupBuilder
 
         public static void InsertStudentLanguage(int studentID, int languageID, int proficiencyLevel)
         {
-
             SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
             con.Open();
             SqlCommand cmd = new SqlCommand(
@@ -863,7 +846,6 @@ namespace GroupBuilder
                 cmd.Parameters.AddWithValue("@StudentID", studentID);
                 cmd.Parameters.AddWithValue("@LanguageID", languageID);
                 cmd.Parameters.AddWithValue("@ProficiencyRank", proficiencyLevel);
-
                 con.Open();
                 cmd.ExecuteNonQuery();
                 con.Close();
@@ -901,7 +883,6 @@ namespace GroupBuilder
                     roles.Add(role);
                 }
             }
-
             return roles;
         }
 
@@ -917,10 +898,8 @@ namespace GroupBuilder
             while (reader.Read())
             {
                 role = new Role();
-
                 role.RoleID = GetSafeInteger(reader, "RoleID");
                 role.Name = GetSafeString(reader, "Name");
-
             }
             con.Close();
 
@@ -939,7 +918,6 @@ namespace GroupBuilder
             while (reader.Read())
             {
                 Role role = new Role();
-
                 role.RoleID = GetSafeInteger(reader, "RoleID");
                 role.Name = GetSafeString(reader, "Name");
                 role.InterestLevel = GetSafeInteger(reader, "InterestLevel");
@@ -1019,9 +997,7 @@ namespace GroupBuilder
             while (reader.Read())
             {
                 Skill skill = new Skill();
-
                 int skillID = GetSafeInteger(reader, "SkillID");
-
                 skillIDs.Add(skillID);
             }
             con.Close();
@@ -1050,10 +1026,8 @@ namespace GroupBuilder
             while (reader.Read())
             {
                 skill = new Skill();
-
                 skill.SkillID = GetSafeInteger(reader, "SkillID");
                 skill.Name = GetSafeString(reader, "Name");
-
             }
             con.Close();
 
@@ -1072,7 +1046,6 @@ namespace GroupBuilder
             while (reader.Read())
             {
                 Skill skill = new Skill();
-
                 skill.SkillID = GetSafeInteger(reader, "SkillID");
                 skill.Name = GetSafeString(reader, "Name");
                 skill.ProficiencyLevel = GetSafeInteger(reader, "ProficiencyLevel");
@@ -1188,7 +1161,6 @@ namespace GroupBuilder
                 Course course = new Course();
 
                 int courseID = GetSafeInteger(reader, "CourseID");
-
                 courseIDs.Add(courseID);
             }
             con.Close();
@@ -1217,12 +1189,10 @@ namespace GroupBuilder
             while (reader.Read())
             {
                 course = new Course();
-
                 course.CourseID = courseID;
                 course.Code = GetSafeString(reader, "Code");
                 course.Name = GetSafeString(reader, "Name");
                 course.CoreCourseFlag = GetSafeBoolean(reader, "CoreCourseFlag");
-
             }
             con.Close();
 
@@ -1250,17 +1220,18 @@ namespace GroupBuilder
 
         public static void DeleteCourse(int courseID)
         {
-
             SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
             SqlCommand cmd = new SqlCommand(
                 @"DELETE FROM Courses WHERE CourseID = @CourseID;", con);
             cmd.Parameters.AddWithValue("@CourseID", courseID);
-
             con.Open();
             cmd.ExecuteNonQuery();
             con.Close();
         }
 
+        #endregion
+
+        #region Prior Courses
 
         public static void InsertStudentPriorCourse(int studentID, int courseID, double? grade)
         {
@@ -1390,7 +1361,6 @@ namespace GroupBuilder
                 course.Code = GetSafeString(reader, "Code");
 
                 courses.Add(course);
-
             }
             con.Close();
 
@@ -1918,7 +1888,6 @@ namespace GroupBuilder
                     course.Students = GetStudents(course.InstructorCourseID);
                 }
             }
-
             return course;
         }
 
@@ -2135,7 +2104,6 @@ namespace GroupBuilder
             SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
             SqlCommand cmd = new SqlCommand(
                 @"DELETE FROM GroupStudents WHERE StudentID = @StudentID;", con);
-            //cmd.Parameters.AddWithValue("@GroupID", groupID);
             cmd.Parameters.AddWithValue("@StudentID", studentID);
             con.Open();
             cmd.ExecuteNonQuery();
@@ -2172,6 +2140,5 @@ namespace GroupBuilder
         }
 
         #endregion
-
     }
 }

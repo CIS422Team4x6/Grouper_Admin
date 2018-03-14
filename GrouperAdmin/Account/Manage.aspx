@@ -1,12 +1,9 @@
 ﻿<%@ Page Title="Manage Account" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="Manage.aspx.cs" Inherits="GroupBuilderAdmin.Account.Manage" %>
 
-<%@ Register Src="~/Account/OpenAuthProviders.ascx" TagPrefix="uc" TagName="OpenAuthProviders" %>
-
 <asp:Content ContentPlaceHolderID="MainContent" runat="server">
     <h2><%: Title %>.</h2>
     <div class="float-right">
             <asp:HyperLink ID="ReturnHomeHyperLink" runat="server" CssClass="btn btn-default btn-sm" NavigateUrl="~/Default.aspx"><span class="fa fa-home"></span>&nbsp;&nbsp;Return Home</asp:HyperLink>
-
     </div>
 
     <div>
