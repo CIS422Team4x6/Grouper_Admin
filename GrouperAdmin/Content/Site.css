@@ -1,0 +1,175 @@
+﻿/* Move down content because we have a fixed navbar that is 50px tall */
+body {
+    background-color: white;
+    padding-top: 50px;
+    padding-bottom: 20px;
+    font-family: 'Open Sans', sans-serif;
+}
+
+/* Wrapping element */
+/* Set some basic padding to keep content from hitting the edges */
+.body-content {
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+/* Override the default bootstrap behavior where horizontal description lists 
+   will truncate terms that are too long to fit in the left column 
+*/
+.dl-horizontal dt {
+    white-space: normal;
+}
+
+/* Set widths on the form inputs since otherwise they're 100% wide */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="tel"],
+input[type="select"] {
+    max-width: 280px;
+}
+
+textarea {
+    max-width: 100%;
+}
+
+/* Responsive: Portrait tablets and up */
+@media screen and (min-width: 768px) {
+    .jumbotron {
+        margin-top: 20px;
+    }
+    .body-content {
+        padding: 0;
+    }
+}
+
+.float-right {
+    float: right;
+}
+
+.panel-default {
+    padding: 15px;
+    margin-top: 15px;
+}
+
+.btn {
+    margin-bottom: 15px;
+}
+
+.navbar {
+    background-color: whitesmoke;
+}
+
+.navbar-nav a {
+    color: #00BFFF !important;
+}
+
+.navbar-nav {
+    font-weight: bold;
+}
+
+h1, h2, h3, h4, h5 {
+    font-family: 'Open Sans', sans-serif;
+}
+
+.control-label {
+    font-family: 'Open Sans', sans-serif;
+}
+
+body, html {
+    font-family: 'Open Sans', sans-serif;
+    font-weight: 500;
+}
+
+.table {
+    border: 1px solid lightgray;
+}
+
+.panel-default.panel-condensed {
+    padding: 4px !important;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.btn {
+    /*margin-left: 5px;*/
+}
+
+.btn-xs {
+    margin-bottom: 0px;
+}
+
+.no-wrap {
+    white-space:nowrap;
+}
+
+.small {
+    font-size: .85em;
+}
+
+.fas, .far, .fab {
+    padding-left: 2px;
+    padding-right: 2px;
+}
+
+.checkboxlist label {
+    font-weight: normal !important;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.btn-sm {
+    margin-right: 5px;
+}
+
+.btn-group > .btn-sm {
+    margin-right: 0px !important;
+}
+
+h5 {
+    font-weight: 500;
+    font-size: 16px;
+}
+
+.table {
+    background-color: white;
+    filter: drop-shadow(0 0 0.75rem lightgray);
+}
+
+.panel {
+    filter: drop-shadow(0 0 0.75rem lightgray);
+}
+
+.btn {
+    filter: drop-shadow(0 0 0.25rem lightgray);
+}
+
+.btn-default:hover {
+    filter: drop-shadow(0 0 0.25rem #46C1FB);
+}
+
+.btn-danger:hover {
+    filter: drop-shadow(0 0 0.25rem red);
+}
+
+.table th {
+    background-color: lightgray !important;
+}
+
+
+#studentPanel {
+   filter: drop-shadow(0 0 0.2rem lightgray);
+}
+
+.highlight {
+    background-color: #46C1FB;
+}
+
+.lead {
+    font-size: 16px;
+}
+
+.novice {
+    color: white;
+    filter: drop-shadow(0 0 0.2rem black);
+}
