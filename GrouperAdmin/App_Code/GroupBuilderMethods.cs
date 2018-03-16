@@ -27,6 +27,7 @@ namespace GroupBuilder
         }
         public bool CoreCourseFlag { get; set; }
         public double? Grade { get; set; }
+        public bool ActiveFlag { get; set; }
         public string LetterGrade
         {
             get
@@ -111,6 +112,7 @@ namespace GroupBuilder
         public int SkillID { get; set; }
         public string Name { get; set; }
         public int? ProficiencyLevel { get; set; }
+        public bool ActiveFlag { get; set; }
     }
 
     [Serializable]
@@ -199,6 +201,8 @@ namespace GroupBuilder
                 return iconText;
             } }
         public int? InterestLevel { get; set; }
+        public bool ActiveFlag { get; set; }
+
     }
 
     [Serializable]
@@ -229,10 +233,13 @@ namespace GroupBuilder
                             iconText = "<span class='fab fa-html5 fa-lg' title='Web Design'></span>";
                             break;
                         case "C++":
-                            iconText = "<span style='font-size: medium; font-family: Courier; font-weight: bold; margin-left: 3px; margin-right: 3px;' title='C++'>C++</span>";
+                            iconText = "<span style='font-size: medium; font-family: Courier; font-weight: bold; margin-left: 3px; margin-right: 3px;' title='C++' >C++</span>";
                             break;
                         case "C":
-                            iconText = "<span style='font-size: medium; font-family: Courier; font-weight: bold; margin-left: 3px; margin-right: 3px;' title='C'>C</span>";
+                            iconText = "<span style='font-size: medium; font-family: Courier; font-weight: bold; margin-left: 3px; margin-right: 3px;' title='C' >C</span>";
+                            break;
+                        default:
+                            iconText = "<span style='font-size: medium; font-family: Courier; font-weight: bold; margin-left: 3px; margin-right: 3px;' title='" + Name + "'>" + Name + "</span>";
                             break;
                     }
                 }
@@ -263,6 +270,9 @@ namespace GroupBuilder
                             case "C":
                                 iconText = "<span style='font-size: medium; font-family: Courier; font-weight: bold; margin-left: 3px; margin-right: 3px;' class='expert' title='C'>C</span>";
                                 break;
+                            default:
+                                iconText = "<span style='font-size: medium; font-family: Courier; font-weight: bold; margin-left: 3px; margin-right: 3px;' class='expert' title='" + Name + "'>" + Name + "</span>";
+                                break;
                         }
                     }
                     else
@@ -290,6 +300,9 @@ namespace GroupBuilder
                             case "C":
                                 iconText = "<span style='font-size: medium; font-family: Courier; font-weight: bold; margin-left: 3px; margin-right: 3px;' class='novice' title='C'>C</span>";
                                 break;
+                            default:
+                                iconText = "<span style='font-size: medium; font-family: Courier; font-weight: bold; margin-left: 3px; margin-right: 3px;' class='expert' title='" + Name + "'>" + Name + "</span>";
+                                break;
                         }
                     }
                 }
@@ -297,6 +310,7 @@ namespace GroupBuilder
             }
         }
         public int? ProficiencyLevel { get; set; }
+        public bool ActiveFlag { get; set; }
     }
 
     public class Student
@@ -308,14 +322,10 @@ namespace GroupBuilder
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public string PreferredName { get; set; }
-        public int? OutgoingLevel { get; set;}
         public string DevelopmentExperience { get; set; }
         public string LearningExpectations { get; set; }
-        public string ContributingRole { get; set; }
         public bool? EnglishSecondLanguageFlag { get; set; }
         public string NativeLanguage { get; set; }
-        public string OtherProgrammingLanguage { get; set; }
-        public int? OtherProgrammingLanguageProficiency { get; set; }
         public string ProgrammingLanguagesDescription { get
         {
                 string languages = "";
@@ -347,6 +357,9 @@ namespace GroupBuilder
                             case "C":
                                 languages += "<span style='font-size: medium; font-family: Courier; font-weight: bold; margin-left: 3px; margin-right: 3px;' class='expert' title='" + language.ProficiencyLevel.ToString() + "'>C</span>";
                                 break;
+                            default:
+                                languages += "<span style='font-size: medium; font-family: Courier; font-weight: bold; margin-left: 3px; margin-right: 3px;' class='expert' title='" + language.Name + "'>" + language.Name + "</span>";
+                                break;
                         }
                     }
                     else
@@ -373,6 +386,9 @@ namespace GroupBuilder
                                 break;
                             case "C":
                                 languages += "<span style='font-size: medium; font-family: Courier; font-weight: bold; margin-left: 3px; margin-right: 3px;' class='novice title='" + language.ProficiencyLevel.ToString() + "'>C</span>";
+                                break;
+                            default:
+                                languages += "<span style='font-size: medium; font-family: Courier; font-weight: bold; margin-left: 3px; margin-right: 3px;' class='novice' title='" + language.Name + "'>" + language.Name + "</span>";
                                 break;
                         }
                     }
@@ -772,28 +788,41 @@ namespace GroupBuilder
             SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
             SqlCommand cmd = new SqlCommand(
                 @"UPDATE ProgrammingLanguages  
-                    SET Name = @Name
+                    SET Name = @Name, 
+                    ActiveFlag = @ActiveFlag 
                 WHERE LanguageID = @LanguageID;", con);
             cmd.Parameters.AddWithValue("@LanguageID", language.LanguageID);
             cmd.Parameters.AddWithValue("@Name", language.Name);
+            cmd.Parameters.AddWithValue("@ActiveFlag", language.ActiveFlag);
             con.Open();
             cmd.ExecuteNonQuery();
             con.Close();
         }
 
-        public static void DeleteLanguage(int languageID)
+        public static int DeleteLanguage(int languageID)
         {
-            SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
-            SqlCommand cmd = new SqlCommand(
-                @"DELETE FROM Students_ProgrammingLanguages WHERE LanguageID = @LanguageID;
+            int result = 0;
+
+            try
+            {
+                SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
+                SqlCommand cmd = new SqlCommand(
+                    @"DELETE FROM Students_ProgrammingLanguages WHERE LanguageID = @LanguageID;
                   DELETE FROM ProgrammingLanguages WHERE LanguageID = @LanguageID;", con);
-            cmd.Parameters.AddWithValue("@LanguageID", languageID);
-            con.Open();
-            cmd.ExecuteNonQuery();
-            con.Close();
+                cmd.Parameters.AddWithValue("@LanguageID", languageID);
+                con.Open();
+                cmd.ExecuteNonQuery();
+                con.Close();
+            }
+            catch(SqlException)
+            {
+                result = -1;
+            }
+            return result;
+
         }
 
-        public static List<ProgrammingLanguage> GetLanguages()
+        public static List<ProgrammingLanguage> GetAllLanguages()
         {
             List<ProgrammingLanguage> languages = new List<ProgrammingLanguage>();
             List<int> languageIDs = new List<int>();
@@ -804,8 +833,35 @@ namespace GroupBuilder
             SqlDataReader reader = cmd.ExecuteReader();
             while (reader.Read())
             {
-                ProgrammingLanguage language = new ProgrammingLanguage();
+                int languageID = GetSafeInteger(reader, "LanguageID");
 
+                languageIDs.Add(languageID);
+            }
+            con.Close();
+
+            foreach (int id in languageIDs)
+            {
+                ProgrammingLanguage language = GetLanguage(id);
+                if (languages != null)
+                {
+                    languages.Add(language);
+                }
+            }
+
+            return languages;
+        }
+
+        public static List<ProgrammingLanguage> GetLanguages()
+        {
+            List<ProgrammingLanguage> languages = new List<ProgrammingLanguage>();
+            List<int> languageIDs = new List<int>();
+
+            SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
+            SqlCommand cmd = new SqlCommand(@"SELECT * FROM ProgrammingLanguages WHERE ActiveFlag = 'True' ORDER BY Name;", con);
+            con.Open();
+            SqlDataReader reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
                 int languageID = GetSafeInteger(reader, "LanguageID");
 
                 languageIDs.Add(languageID);
@@ -838,6 +894,7 @@ namespace GroupBuilder
                 language = new ProgrammingLanguage();
                 language.LanguageID = GetSafeInteger(reader, "LanguageID");
                 language.Name = GetSafeString(reader, "Name");
+                language.ActiveFlag = GetSafeBoolean(reader, "ActiveFlag");
             }
             con.Close();
 
@@ -947,25 +1004,66 @@ namespace GroupBuilder
             SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
             SqlCommand cmd = new SqlCommand(
                 @"UPDATE Roles  
-                    SET Name = @Name
+                    SET Name = @Name, 
+                    ActiveFlag = @ActiveFlag 
                 WHERE RoleID = @RoleID;", con);
             cmd.Parameters.AddWithValue("@RoleID", role.RoleID);
             cmd.Parameters.AddWithValue("@Name", role.Name);
+            cmd.Parameters.AddWithValue("@ActiveFlag", role.ActiveFlag);
             con.Open();
             cmd.ExecuteNonQuery();
             con.Close();
         }
 
-        public static void DeleteRole(int roleID)
+        public static int DeleteRole(int roleID)
         {
-            SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
-            SqlCommand cmd = new SqlCommand(
-                @"DELETE FROM Students_RoleInterests WHERE RoleID = @RoleID;
+            int result = 0;
+            try
+            {
+                SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
+                SqlCommand cmd = new SqlCommand(
+                    @"DELETE FROM Students_RoleInterests WHERE RoleID = @RoleID;
                   DELETE FROM Roles WHERE RoleID = @RoleID;", con);
-            cmd.Parameters.AddWithValue("@RoleID", roleID);
+                cmd.Parameters.AddWithValue("@RoleID", roleID);
+                con.Open();
+                cmd.ExecuteNonQuery();
+                con.Close();
+            }
+            catch(SqlException)
+            {
+                result = -1;
+            }
+            return result;
+        }
+
+        public static List<Role> GetAllRoles()
+        {
+            List<Role> roles = new List<Role>();
+            List<int> roleIDs = new List<int>();
+
+            SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
+            SqlCommand cmd = new SqlCommand(@"SELECT * FROM Roles ORDER BY Name;", con);
             con.Open();
-            cmd.ExecuteNonQuery();
+            SqlDataReader reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                Role role = new Role();
+
+                int roleID = GetSafeInteger(reader, "RoleID");
+
+                roleIDs.Add(roleID);
+            }
             con.Close();
+
+            foreach (int id in roleIDs)
+            {
+                Role role = GetRole(id);
+                if (roles != null)
+                {
+                    roles.Add(role);
+                }
+            }
+            return roles;
         }
 
 
@@ -975,7 +1073,7 @@ namespace GroupBuilder
             List<int> roleIDs = new List<int>();
 
             SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
-            SqlCommand cmd = new SqlCommand(@"SELECT * FROM Roles ORDER BY Name;", con);
+            SqlCommand cmd = new SqlCommand(@"SELECT * FROM Roles WHERE ActiveFlag = 'True' ORDER BY Name;", con);
             con.Open();
             SqlDataReader reader = cmd.ExecuteReader();
             while (reader.Read())
@@ -1013,6 +1111,7 @@ namespace GroupBuilder
                 role = new Role();
                 role.RoleID = GetSafeInteger(reader, "RoleID");
                 role.Name = GetSafeString(reader, "Name");
+                role.ActiveFlag = GetSafeBoolean(reader, "ActiveFlag");
             }
             con.Close();
 
@@ -1133,25 +1232,65 @@ namespace GroupBuilder
             SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
             SqlCommand cmd = new SqlCommand(
                 @"UPDATE Skills  
-                    SET Name = @Name
+                    SET Name = @Name, 
+                    ActiveFlag = @ActiveFlag 
                 WHERE SkillID = @SkillID;", con);
             cmd.Parameters.AddWithValue("@SkillID", skill.SkillID);
+            cmd.Parameters.AddWithValue("@ActiveFlag", skill.ActiveFlag);
             cmd.Parameters.AddWithValue("@Name", skill.Name);
             con.Open();
             cmd.ExecuteNonQuery();
             con.Close();
         }
 
-        public static void DeleteSkill(int skillID)
+        public static int DeleteSkill(int skillID)
         {
-            SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
-            SqlCommand cmd = new SqlCommand(
-                @"DELETE FROM Students_Skills WHERE SkillID = @SkillID;
+            int result = 0;
+            try
+            {
+                SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
+                SqlCommand cmd = new SqlCommand(
+                    @"DELETE FROM Students_Skills WHERE SkillID = @SkillID;
                   DELETE FROM Skills WHERE SkillID = @SkillID;", con);
-            cmd.Parameters.AddWithValue("@SkillID", skillID);
+                cmd.Parameters.AddWithValue("@SkillID", skillID);
+                con.Open();
+                cmd.ExecuteNonQuery();
+                con.Close();
+            }
+            catch(SqlException)
+            {
+                result = -1;
+            }
+            return result;
+        }
+
+        public static List<Skill> GetAllSkills()
+        {
+            List<Skill> skills = new List<Skill>();
+            List<int> skillIDs = new List<int>();
+
+            SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
+            SqlCommand cmd = new SqlCommand(@"SELECT * FROM Skills ORDER BY Name;", con);
             con.Open();
-            cmd.ExecuteNonQuery();
+            SqlDataReader reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                Skill skill = new Skill();
+                int skillID = GetSafeInteger(reader, "SkillID");
+                skillIDs.Add(skillID);
+            }
             con.Close();
+
+            foreach (int id in skillIDs)
+            {
+                Skill skill = GetSkill(id);
+                if (skills != null)
+                {
+                    skills.Add(skill);
+                }
+            }
+
+            return skills;
         }
 
         public static List<Skill> GetSkills()
@@ -1160,7 +1299,7 @@ namespace GroupBuilder
             List<int> skillIDs = new List<int>();
 
             SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
-            SqlCommand cmd = new SqlCommand(@"SELECT * FROM Skills ORDER BY Name;", con);
+            SqlCommand cmd = new SqlCommand(@"SELECT * FROM Skills WHERE ActiveFlag = 'True' ORDER BY Name;", con);
             con.Open();
             SqlDataReader reader = cmd.ExecuteReader();
             while (reader.Read())
@@ -1197,6 +1336,7 @@ namespace GroupBuilder
                 skill = new Skill();
                 skill.SkillID = GetSafeInteger(reader, "SkillID");
                 skill.Name = GetSafeString(reader, "Name");
+                skill.ActiveFlag = GetSafeBoolean(reader, "ActiveFlag");
             }
             con.Close();
 
@@ -1316,13 +1456,43 @@ namespace GroupBuilder
             return courseID;
         }
 
-        public static List<Course> GetCourses()
+        public static List<Course> GetAllCourses()
         {
             List<Course> courses = new List<Course>();
             List<int> courseIDs = new List<int>();
 
             SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
             SqlCommand cmd = new SqlCommand(@"SELECT * FROM Courses ORDER BY Code, Name;", con);
+            con.Open();
+            SqlDataReader reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                Course course = new Course();
+
+                int courseID = GetSafeInteger(reader, "CourseID");
+                courseIDs.Add(courseID);
+            }
+            con.Close();
+
+            foreach (int id in courseIDs)
+            {
+                Course course = GetCourse(id);
+                if (course != null)
+                {
+                    courses.Add(course);
+                }
+            }
+
+            return courses;
+        }
+
+        public static List<Course> GetCourses()
+        {
+            List<Course> courses = new List<Course>();
+            List<int> courseIDs = new List<int>();
+
+            SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
+            SqlCommand cmd = new SqlCommand(@"SELECT * FROM Courses WHERE ActiveFlag = 'True' ORDER BY Code, Name;", con);
             con.Open();
             SqlDataReader reader = cmd.ExecuteReader();
             while (reader.Read())
@@ -1362,6 +1532,7 @@ namespace GroupBuilder
                 course.Code = GetSafeString(reader, "Code");
                 course.Name = GetSafeString(reader, "Name");
                 course.CoreCourseFlag = GetSafeBoolean(reader, "CoreCourseFlag");
+                course.ActiveFlag = GetSafeBoolean(reader, "ActiveFlag");
             }
             con.Close();
 
@@ -1375,27 +1546,37 @@ namespace GroupBuilder
                 @"UPDATE Courses 
                     SET Code = @Code,
                         Name = @Name,
-                        CoreCourseFlag = @CoreCourseFlag 
+                        CoreCourseFlag = @CoreCourseFlag, 
+                        ActiveFlag = @ActiveFlag 
                     WHERE CourseID = @CourseID;", con);
             cmd.Parameters.AddWithValue("@CourseID", course.CourseID);
             cmd.Parameters.AddWithValue("@Code", course.Code);
             cmd.Parameters.AddWithValue("@Name", course.Name);
             cmd.Parameters.AddWithValue("@CoreCourseFlag", course.CoreCourseFlag);
-
+            cmd.Parameters.AddWithValue("@ActiveFlag", course.ActiveFlag);
             con.Open();
             cmd.ExecuteNonQuery();
             con.Close();
         }
 
-        public static void DeleteCourse(int courseID)
+        public static int DeleteCourse(int courseID)
         {
-            SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
-            SqlCommand cmd = new SqlCommand(
-                @"DELETE FROM Courses WHERE CourseID = @CourseID;", con);
-            cmd.Parameters.AddWithValue("@CourseID", courseID);
-            con.Open();
-            cmd.ExecuteNonQuery();
-            con.Close();
+            int result = 0;
+            try
+            {
+                SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
+                SqlCommand cmd = new SqlCommand(
+                    @"DELETE FROM Courses WHERE CourseID = @CourseID;", con);
+                cmd.Parameters.AddWithValue("@CourseID", courseID);
+                con.Open();
+                cmd.ExecuteNonQuery();
+                con.Close();
+            }
+            catch(SqlException)
+            {
+                result = -1;
+            }
+            return result;
         }
 
         #endregion
@@ -1434,10 +1615,10 @@ namespace GroupBuilder
 
         public static List<Course> GetStudentPriorCourses(int studentID)
         {
-            List<Course> courses = new List<Course>();
+            List<Course> courseGrades = new List<Course>();
 
             SqlConnection con = new SqlConnection(GrouperConnectionString.ConnectionString);
-            SqlCommand cmd = new SqlCommand(@"SELECT c.*, scc.Grade FROM Students_CoursesCompleted scc JOIN Courses c ON scc.CourseID = c.CourseID WHERE scc.StudentID = @StudentID ORDER BY c.Code;", con);
+            SqlCommand cmd = new SqlCommand(@"SELECT * FROM Students_CoursesCompleted WHERE StudentID = @StudentID;", con);
             cmd.Parameters.AddWithValue("@StudentID", studentID);
             con.Open();
             SqlDataReader reader = cmd.ExecuteReader();
@@ -1446,14 +1627,21 @@ namespace GroupBuilder
                 Course course = new Course();
 
                 course.CourseID = GetSafeInteger(reader, "CourseID");
-                course.Name = GetSafeString(reader, "Name");
-                course.Code = GetSafeString(reader, "Code");
                 course.Grade = GetSafeDouble(reader, "Grade");
 
-                courses.Add(course);
+                courseGrades.Add(course);
 
             }
             con.Close();
+
+            List<Course> courses = new List<Course>();
+
+            foreach(Course course in courseGrades)
+            {
+                Course returnCourse = GetCourse(course.CourseID);
+                returnCourse.Grade = course.Grade;
+                courses.Add(returnCourse);
+            }
 
             return courses;
         }
@@ -1582,9 +1770,9 @@ namespace GroupBuilder
             {
                 cmd = new SqlCommand(
                 @"INSERT INTO Students    
-                    (DuckID, InstructorCourseID, LastName, FirstName, PreferredName, UOID, OutgoingLevel, EnglishSecondLanguageFlag, NativeLanguage, DevelopmentExperience, LearningExpectations, GUID, SurveySubmittedDate) 
+                    (DuckID, InstructorCourseID, LastName, FirstName, PreferredName, UOID, EnglishSecondLanguageFlag, NativeLanguage, DevelopmentExperience, LearningExpectations, GUID, SurveySubmittedDate) 
                     VALUES 
-                    (@DuckID, @InstructorCourseID, @LastName, @FirstName, @PreferredName, @UOID, @OutgoingLevel, @EnglishSecondLanguageFlag, @NativeLanguage, @DevelopmentExperience, @LearningExpectations, @GUID, @SurveySubmittedDate);
+                    (@DuckID, @InstructorCourseID, @LastName, @FirstName, @PreferredName, @UOID, @EnglishSecondLanguageFlag, @NativeLanguage, @DevelopmentExperience, @LearningExpectations, @GUID, @SurveySubmittedDate);
                     SELECT SCOPE_IDENTITY();", con);
                 cmd.Parameters.AddWithValue("@DuckID", student.DuckID ?? (Object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@InstructorCourseID", student.InstructorCourseID);
@@ -1592,7 +1780,6 @@ namespace GroupBuilder
                 cmd.Parameters.AddWithValue("@FirstName", student.FirstName ?? (Object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@PreferredName", student.PreferredName ?? (Object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@UOID", student.UOID ?? (Object)DBNull.Value);
-                cmd.Parameters.AddWithValue("@OutgoingLevel", student.OutgoingLevel ?? (Object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@EnglishSecondLanguageFlag", student.EnglishSecondLanguageFlag ?? (Object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@NativeLanguage", student.NativeLanguage ?? (Object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@DevelopmentExperience", student.DevelopmentExperience ?? (Object)DBNull.Value);

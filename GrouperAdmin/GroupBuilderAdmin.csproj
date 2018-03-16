@@ -161,6 +161,10 @@
     <Content Include="Account\Manage.aspx" />
     <Content Include="Account\ManagePassword.aspx" />
     <Content Include="Account\Register.aspx" />
+    <Content Include="App_Plugins\FontAwesomeIconsDD\assets\font-awesome\css\font-awesome.min.css" />
+    <Content Include="App_Plugins\FontAwesomeIconsDD\assets\font-awesome\fonts\fontawesome-webfont.svg" />
+    <Content Include="App_Plugins\FontAwesomeIconsDD\FontAwesomeIconsDD.controller.js" />
+    <Content Include="App_Plugins\FontAwesomeIconsDD\FontAwesomeIconsDD.html" />
     <Content Include="Components.aspx" />
     <Content Include="Content\bootstrap.css" />
     <Content Include="Content\bootstrap.min.css" />
@@ -200,6 +204,12 @@
     <Content Include="webfonts\fa-solid-900.ttf" />
     <Content Include="webfonts\fa-solid-900.woff" />
     <Content Include="webfonts\fa-solid-900.woff2" />
+    <Content Include="App_Plugins\FontAwesomeIconsDD\package.manifest" />
+    <Content Include="App_Plugins\FontAwesomeIconsDD\assets\font-awesome\fonts\FontAwesome.otf" />
+    <Content Include="App_Plugins\FontAwesomeIconsDD\assets\font-awesome\fonts\fontawesome-webfont.woff2" />
+    <Content Include="App_Plugins\FontAwesomeIconsDD\assets\font-awesome\fonts\fontawesome-webfont.woff" />
+    <Content Include="App_Plugins\FontAwesomeIconsDD\assets\font-awesome\fonts\fontawesome-webfont.ttf" />
+    <Content Include="App_Plugins\FontAwesomeIconsDD\assets\font-awesome\fonts\fontawesome-webfont.eot" />
     <None Include="Properties\PublishProfiles\Filesystem.pubxml" />
     <None Include="Properties\PublishProfiles\Filesystem2.pubxml" />
     <None Include="Properties\PublishProfiles\GrouperAdmin - FTP %282%29.pubxml" />

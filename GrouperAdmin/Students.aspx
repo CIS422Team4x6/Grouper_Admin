@@ -53,6 +53,7 @@
             <asp:PostBackTrigger ControlID="ImportStudentsLinkButton" />
         </Triggers>
         <ContentTemplate>
+            <asp:Timer ID="StudentsTimer" Interval="10000" runat="server" OnTick="StudentsTimer_Tick"></asp:Timer>
             <br />
             <asp:HiddenField ID="SelectedStudentIDHiddenField" runat="server" />
             <asp:Panel ID="StudentListPanel" runat="server">

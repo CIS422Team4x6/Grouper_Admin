@@ -38,7 +38,7 @@ namespace GroupBuilderAdmin
                     }
                     else
                     {
-                        _Courses = GrouperMethods.GetCourses();
+                        _Courses = GrouperMethods.GetAllCourses();
                         Session["Courses"] = _Courses;
                     }
                 }
@@ -90,7 +90,7 @@ namespace GroupBuilderAdmin
                     }
                     else
                     {
-                        _Languages = GrouperMethods.GetLanguages();
+                        _Languages = GrouperMethods.GetAllLanguages();
                         Session["Languages"] = _Languages;
                     }
                 }
@@ -116,7 +116,7 @@ namespace GroupBuilderAdmin
                     }
                     else
                     {
-                        _Skills = GrouperMethods.GetSkills();
+                        _Skills = GrouperMethods.GetAllSkills();
                         Session["Skills"] = _Skills;
                     }
                 }
@@ -784,7 +784,7 @@ namespace GroupBuilderAdmin
                                         string[] pair = coursePair.Split(':');
                                         int courseID = int.Parse(pair[0]);
 
-                                        Course course = Courses.FirstOrDefault(x => x.CourseID == courseID);
+                                        Course course = GrouperMethods.GetCourse(courseID);
                                         if (course != null)
                                         {
                                             double grade;
@@ -794,6 +794,10 @@ namespace GroupBuilderAdmin
                                                 grade = double.Parse(pair[1]);
                                                 course.Grade = grade;
                                                 student.PriorCourses.Add(course);
+                                            }
+                                            else
+                                            {
+                                                grade = 0.0;
                                             }
                                         }
                                     }
@@ -1869,5 +1873,10 @@ namespace GroupBuilderAdmin
         }
 
         #endregion
+
+        protected void StudentsTimer_Tick(object sender, EventArgs e)
+        {
+            StudentsGridView_BindGridView();
+        }
     }
 }

@@ -58,7 +58,7 @@ namespace GroupBuilderAdmin
         // Binds drop down lists throughout the page
         protected void BindDropDownLists()
         {
-            List<Course> courses = GrouperMethods.GetCourses();
+            List<Course> courses = GrouperMethods.GetAllCourses();
 
             CoursesDropDownList.DataSource = courses;
             CoursesDropDownList.DataBind();

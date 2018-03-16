@@ -7,6 +7,7 @@ using System.Web.Security;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using Microsoft.AspNet.Identity;
+using GroupBuilder;
 
 namespace GroupBuilderAdmin
 {
@@ -55,6 +56,8 @@ namespace GroupBuilderAdmin
                 // Set Anti-XSRF token
                 ViewState[AntiXsrfTokenKey] = Page.ViewStateUserKey;
                 ViewState[AntiXsrfUserNameKey] = Context.User.Identity.Name ?? String.Empty;
+
+
             }
             else
             {
@@ -69,11 +72,37 @@ namespace GroupBuilderAdmin
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            if (Context.User.Identity.Name != null)
+            {
+                Label userNameLabel = (Label)LoginView.FindControl("UserNameLabel");
 
+                if (userNameLabel != null)
+                {
+                    if (Session["UserName"] == null)
+                    {
+                        Instructor instructor = GrouperMethods.GetInstructor(Context.User.Identity.Name);
+                        if (instructor != null)
+                        {
+
+                            userNameLabel.Text = instructor.FirstName + " " + instructor.LastName;
+                            Session["UserName"] = instructor.FirstName + " " + instructor.LastName;
+                        }
+                        else
+                        {
+                            userNameLabel.Text = "";
+                        }
+                    }
+                    else
+                    {
+                        userNameLabel.Text = Session["UserName"].ToString();
+                    }
+                }
+            }
         }
 
         protected void Unnamed_LoggingOut(object sender, LoginCancelEventArgs e)
         {
+            Session.Abandon();
             Context.GetOwinContext().Authentication.SignOut(DefaultAuthenticationTypes.ApplicationCookie);
         }
     }

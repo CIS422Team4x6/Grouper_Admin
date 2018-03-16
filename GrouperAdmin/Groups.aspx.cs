@@ -36,26 +36,75 @@ namespace GroupBuilderAdmin
             }
         }
 
-        private List<ProgrammingLanguage> _Languages;
-        public List<ProgrammingLanguage> Languages
+        //private List<ProgrammingLanguage> _Languages;
+        //public List<ProgrammingLanguage> Languages
+        //{
+        //    get
+        //    {
+        //        if (ViewState["Languages"] != null)
+        //        {
+        //            _Languages = (List<ProgrammingLanguage>)ViewState["Languages"];
+        //        }
+        //        else
+        //        {
+        //            _Languages = GrouperMethods.GetLanguages();
+        //            ViewState["Languages"] = _Languages;
+        //        }
+        //        return _Languages;
+        //    }
+        //    set
+        //    {
+        //        _Languages = value;
+        //        ViewState["Languages"] = _Languages;
+        //    }
+        //}
+
+        //private List<Role> _Roles;
+        //public List<Role> Roles
+        //{
+        //    get
+        //    {
+        //        if (ViewState["Roles"] != null)
+        //        {
+        //            _Roles = (List<Role>)ViewState["Roles"];
+        //        }
+        //        else
+        //        {
+        //            _Roles = GrouperMethods.GetRoles();
+        //            ViewState["Roles"] = _Roles;
+        //        }
+        //        return _Roles;
+        //    }
+        //    set
+        //    {
+        //        _Roles = value;
+        //        ViewState["Roles"] = _Roles;
+        //    }
+        //}
+
+        private List<Course> _Courses;
+        public List<Course> Courses
         {
             get
             {
-                if (ViewState["Languages"] != null)
+                if (_Courses == null)
                 {
-                    _Languages = (List<ProgrammingLanguage>)ViewState["Languages"];
+                    if (Session["Courses"] != null)
+                    {
+                        _Courses = (List<Course>)Session["Courses"];
+                    }
+                    else
+                    {
+                        _Courses = GrouperMethods.GetAllCourses();
+                        Session["Courses"] = _Courses;
+                    }
                 }
-                else
-                {
-                    _Languages = GrouperMethods.GetLanguages();
-                    ViewState["Languages"] = _Languages;
-                }
-                return _Languages;
+                return _Courses;
             }
             set
             {
-                _Languages = value;
-                ViewState["Languages"] = _Languages;
+                _Courses = value;
+                Session["Courses"] = _Courses;
             }
         }
 
@@ -64,21 +113,76 @@ namespace GroupBuilderAdmin
         {
             get
             {
-                if (ViewState["Roles"] != null)
+                if (_Roles == null)
                 {
-                    _Roles = (List<Role>)ViewState["Roles"];
-                }
-                else
-                {
-                    _Roles = GrouperMethods.GetRoles();
-                    ViewState["Roles"] = _Roles;
+                    if (Session["Roles"] != null)
+                    {
+                        _Roles = (List<Role>)Session["Roles"];
+                    }
+                    else
+                    {
+                        _Roles = GrouperMethods.GetAllRoles();
+                        Session["Roles"] = _Roles;
+                    }
                 }
                 return _Roles;
             }
             set
             {
                 _Roles = value;
-                ViewState["Roles"] = _Roles;
+                Session["Roles"] = _Roles;
+            }
+        }
+
+        private List<ProgrammingLanguage> _Languages;
+        public List<ProgrammingLanguage> Languages
+        {
+            get
+            {
+                if (_Languages == null)
+                {
+                    if (Session["Languages"] != null)
+                    {
+                        _Languages = (List<ProgrammingLanguage>)Session["Languages"];
+                    }
+                    else
+                    {
+                        _Languages = GrouperMethods.GetAllLanguages();
+                        Session["Languages"] = _Languages;
+                    }
+                }
+                return _Languages;
+            }
+            set
+            {
+                _Languages = value;
+                Session["Languages"] = _Languages;
+            }
+        }
+
+        private List<Skill> _Skills;
+        public List<Skill> Skills
+        {
+            get
+            {
+                if (_Skills == null)
+                {
+                    if (Session["Skills"] != null)
+                    {
+                        _Skills = (List<Skill>)Session["Skills"];
+                    }
+                    else
+                    {
+                        _Skills = GrouperMethods.GetAllSkills();
+                        Session["Skills"] = _Skills;
+                    }
+                }
+                return _Skills;
+            }
+            set
+            {
+                _Skills = value;
+                Session["Skills"] = _Skills;
             }
         }
 
@@ -171,9 +275,11 @@ namespace GroupBuilderAdmin
 
                 if (instructorCourse != null)
                 {
-                    Course course = GrouperMethods.GetCourse(instructorCourse.CourseID);
-
-                    CourseNameLabel.Text = course.FullName;
+                    Course course = Courses.FirstOrDefault(x => x.CourseID == instructorCourse.CourseID);
+                    if (course != null)
+                    {
+                        CourseNameLabel.Text = course.FullName;
+                    }
 
                     LanguagesDropDownList.DataSource = Languages;
                     LanguagesDropDownList.DataBind();
@@ -361,7 +467,7 @@ namespace GroupBuilderAdmin
 
                 groupID = GrouperMethods.InsertGroup(group);
 
-                group = GrouperMethods.GetGroup(groupID);
+                group.GroupID = groupID;
             }
             else
             {
@@ -414,7 +520,7 @@ namespace GroupBuilderAdmin
             InstructorCourse instructorCourse = GrouperMethods.GetInstructorCourse(instructorCourseID);
 
             Group group = instructorCourse.Groups.FirstOrDefault(x => x.GroupNumber == groupNumber);
-            List<ProgrammingLanguage> languages = GrouperMethods.GetLanguages();
+            List<ProgrammingLanguage> languages = GrouperMethods.GetAllLanguages();
 
             string stats = "";
 
@@ -502,11 +608,11 @@ namespace GroupBuilderAdmin
         // Creates the selected number of groups
         protected void BuildGroupsLinkButton_Click(object sender, EventArgs e)
         {
-            InstructorCourse course = GrouperMethods.GetInstructorCourse(InstructorCourseID);
-
+            //InstructorCourse course = GrouperMethods.GetInstructorCourse(InstructorCourseID);
+            //InstructorCourse
             int numberOfGroups = int.Parse(NumberOfGroupsDropDownList.SelectedValue);
 
-            if (numberOfGroups > course.Groups.Count)
+            if (numberOfGroups > InstructorCourse.Groups.Count)
             {
                 for (int i = 0; i < numberOfGroups; i++)
                 {
@@ -517,11 +623,11 @@ namespace GroupBuilderAdmin
                     GrouperMethods.InsertGroup(group);
                 }
             }
-            else if (numberOfGroups < course.Groups.Count)
+            else if (numberOfGroups < InstructorCourse.Groups.Count)
             {
-                for (int i = numberOfGroups; i < course.Groups.Count; i++)
+                for (int i = numberOfGroups; i < InstructorCourse.Groups.Count; i++)
                 {
-                    GrouperMethods.DeleteGroup(course.Groups[i].GroupID);
+                    GrouperMethods.DeleteGroup(InstructorCourse.Groups[i].GroupID);
                 }
                 StudentsGridView_BindGridView();
             }
@@ -615,13 +721,13 @@ namespace GroupBuilderAdmin
                     statsLabel.Text += "<b>GPA Average:</b> " + averageGPA.ToString("#.##") + "&nbsp;&nbsp;<b>GPA Range:</b> " + difference.ToString("#.##") + "<br />";
                 }
 
-                List<ProgrammingLanguage> languages = GrouperMethods.GetLanguages();
+                //List<ProgrammingLanguage> languages = GrouperMethods.GetLanguages();
 
                 int languagesInCommon = 0;
                 int languageLevel = 0;
                 string languageName = "";
 
-                foreach (ProgrammingLanguage language in languages)
+                foreach (ProgrammingLanguage language in Languages)
                 {
                     List<Student> languageStudents = students.Where(x => x.Languages.Exists(y => y.LanguageID == language.LanguageID)).ToList();
 
@@ -668,7 +774,7 @@ namespace GroupBuilderAdmin
             LinkButton cancelEditNameLinkButton = (LinkButton)e.Item.FindControl("CancelEditGroupNameLinkButton");
 
             int groupID = int.Parse(e.CommandArgument.ToString());
-            Group group = GrouperMethods.GetGroup(groupID);
+            Group group = InstructorCourse.Groups.FirstOrDefault(x => x.GroupID == groupID);
 
             if (e.CommandName == "edit_group_name")
             {
@@ -722,7 +828,7 @@ namespace GroupBuilderAdmin
         {
             ClearGroups();
 
-            List<Student> students = GrouperMethods.GetStudents(InstructorCourseID);
+            List<Student> students = InstructorCourse.Students;
 
             int groupCount = InstructorCourse.Groups.Count();
             int studentCount = students.Count();
@@ -1222,7 +1328,7 @@ namespace GroupBuilderAdmin
 
             if (e.CommandName == "delete_group_member")
             {
-                Student student = GrouperMethods.GetStudent(studentID);
+                Student student = InstructorCourse.Students.FirstOrDefault(x => x.StudentID == studentID);
 
                 if (student != null)
                 {

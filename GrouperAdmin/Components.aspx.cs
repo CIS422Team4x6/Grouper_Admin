@@ -114,14 +114,14 @@ namespace GroupBuilderAdmin
 
         protected void CoursesGridView_BindGridView()
         {
-            List<Course> courses = GrouperMethods.GetCourses();
+            List<Course> courses = GrouperMethods.GetAllCourses();
             CoursesGridView.DataSource = courses;
             CoursesGridView.DataBind();
         }
 
         protected void CoursesGridView_BindGridView(int editIndex)
         {
-            List<Course> courses = GrouperMethods.GetCourses();
+            List<Course> courses = GrouperMethods.GetAllCourses();
             CoursesGridView.DataSource = courses;
             CoursesGridView.EditIndex = editIndex;
             CoursesGridView.DataBind();
@@ -144,18 +144,19 @@ namespace GroupBuilderAdmin
             }
             else if (e.CommandName == "save_changes")
             {
-
-
                 if (course != null)
                 {
-                    TextBox codeTextBox = (TextBox)row.FindControl("CodeTextBox");
+                    TextBox codeTextBox = (TextBox)row.FindControl("EditCourseCodeTextBox");
                     course.Code = codeTextBox.Text.Trim();
 
-                    TextBox nameTextBox = (TextBox)row.FindControl("NameTextBox");
+                    TextBox nameTextBox = (TextBox)row.FindControl("EditCourseNameTextBox");
                     course.Name = nameTextBox.Text.Trim();
 
                     DropDownList coreCourseDropDownList = (DropDownList)row.FindControl("CoreCourseFlagDropDownList");
                     course.CoreCourseFlag = bool.Parse(coreCourseDropDownList.SelectedValue);
+
+                    DropDownList displayCourseDropDownList = (DropDownList)row.FindControl("EditCourseDisplayDropDownList");
+                    course.ActiveFlag = bool.Parse(coreCourseDropDownList.SelectedValue);
 
                     GrouperMethods.UpdateCourse(course);
 
@@ -221,11 +222,18 @@ namespace GroupBuilderAdmin
             {
                 int courseID = int.Parse(SelectedCourseIDHiddenField.Value);
 
-                GrouperMethods.DeleteCourse(courseID);
+                int result = GrouperMethods.DeleteCourse(courseID);
 
-                CoursesGridView_BindGridView();
+                if (result == 0)
+                {
+                    CoursesGridView_BindGridView();
 
-                MessageBox("Course Deleted", "The course was deleted.", "Okay");
+                    MessageBox("Course Deleted", "The course was deleted.", "Okay");
+                }
+                else
+                {
+                    MessageBox("Unable to Delete Course", "The course could not be deleted.  Doing so would affect other users of the system.", "Okay");
+                }
             }
             else if (!string.IsNullOrEmpty(SelectedLanguageIDHiddenField.Value))
             {
@@ -265,14 +273,14 @@ namespace GroupBuilderAdmin
 
         protected void LanguagesGridView_BindGridView()
         {
-            List<ProgrammingLanguage> languages = GrouperMethods.GetLanguages();
+            List<ProgrammingLanguage> languages = GrouperMethods.GetAllLanguages();
             LanguagesGridView.DataSource = languages;
             LanguagesGridView.DataBind();
         }
 
         protected void LanguagesGridView_BindGridView(int editIndex)
         {
-            List<ProgrammingLanguage> languages = GrouperMethods.GetLanguages();
+            List<ProgrammingLanguage> languages = GrouperMethods.GetAllLanguages();
             LanguagesGridView.DataSource = languages;
             LanguagesGridView.EditIndex = editIndex;
             LanguagesGridView.DataBind();
@@ -298,7 +306,11 @@ namespace GroupBuilderAdmin
                 if (language != null)
                 {
                     TextBox nameTextBox = (TextBox)row.FindControl("EditLanguageNameTextBox");
+                    DropDownList activeDropDownList = (DropDownList)row.FindControl("DisplayLanguageDropDownList");
+
+
                     language.Name = nameTextBox.Text.Trim();
+                    language.ActiveFlag = bool.Parse(activeDropDownList.SelectedValue);
 
                     GrouperMethods.UpdateLanguage(language);
 
@@ -356,14 +368,14 @@ namespace GroupBuilderAdmin
 
         protected void RolesGridView_BindGridView()
         {
-            List<Role> roles = GrouperMethods.GetRoles();
+            List<Role> roles = GrouperMethods.GetAllRoles();
             RolesGridView.DataSource = roles;
             RolesGridView.DataBind();
         }
 
         protected void RolesGridView_BindGridView(int editIndex)
         {
-            List<Role> roles = GrouperMethods.GetRoles();
+            List<Role> roles = GrouperMethods.GetAllRoles();
             RolesGridView.DataSource = roles;
             RolesGridView.EditIndex = editIndex;
             RolesGridView.DataBind();
@@ -389,8 +401,10 @@ namespace GroupBuilderAdmin
                 if (role != null)
                 {
                     TextBox nameTextBox = (TextBox)row.FindControl("EditRoleNameTextBox");
-                    role.Name = nameTextBox.Text.Trim();
+                    DropDownList activeDropDownList = (DropDownList)row.FindControl("DisplayRoleDropDownList");
 
+                    role.Name = nameTextBox.Text.Trim();
+                    role.ActiveFlag = bool.Parse(activeDropDownList.SelectedValue);
                     GrouperMethods.UpdateRole(role);
 
                     RolesGridView_BindGridView(-1);
@@ -447,14 +461,14 @@ namespace GroupBuilderAdmin
 
         protected void SkillsGridView_BindGridView()
         {
-            List<Skill> skills = GrouperMethods.GetSkills();
+            List<Skill> skills = GrouperMethods.GetAllSkills();
             SkillsGridView.DataSource = skills;
             SkillsGridView.DataBind();
         }
 
         protected void SkillsGridView_BindGridView(int editIndex)
         {
-            List<Skill> skills = GrouperMethods.GetSkills();
+            List<Skill> skills = GrouperMethods.GetAllSkills();
             SkillsGridView.DataSource = skills;
             SkillsGridView.EditIndex = editIndex;
             SkillsGridView.DataBind();
@@ -480,7 +494,10 @@ namespace GroupBuilderAdmin
                 if (skill != null)
                 {
                     TextBox nameTextBox = (TextBox)row.FindControl("EditSkillNameTextBox");
+                    DropDownList activeDropDownList = (DropDownList)row.FindControl("DisplaySkillDropDownList");
+
                     skill.Name = nameTextBox.Text.Trim();
+                    skill.ActiveFlag = bool.Parse(activeDropDownList.SelectedValue);
 
                     GrouperMethods.UpdateSkill(skill);
 

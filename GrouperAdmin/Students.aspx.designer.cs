@@ -94,6 +94,15 @@ namespace GroupBuilderAdmin {
         protected global::System.Web.UI.WebControls.LinkButton ProcessStudentsFileLinkButton;
         
         /// <summary>
+        /// StudentsTimer control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.Timer StudentsTimer;
+        
+        /// <summary>
         /// SelectedStudentIDHiddenField control.
         /// </summary>
         /// <remarks>

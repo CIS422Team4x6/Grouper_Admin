@@ -256,6 +256,24 @@ namespace GroupBuilderAdmin {
         protected global::System.Web.UI.WebControls.TextBox LanguageNameTextBox;
         
         /// <summary>
+        /// LanguageIconLabel control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label LanguageIconLabel;
+        
+        /// <summary>
+        /// langageIconSelect control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.HtmlControls.HtmlSelect langageIconSelect;
+        
+        /// <summary>
         /// SaveAddLanguageLinkButton control.
         /// </summary>
         /// <remarks>

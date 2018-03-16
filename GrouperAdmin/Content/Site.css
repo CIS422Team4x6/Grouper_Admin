@@ -173,3 +173,7 @@ h5 {
     color: white;
     filter: drop-shadow(0 0 0.2rem black);
 }
+
+.awesome {
+    font-family: 'FontAwesome', 'Open Sans';
+}
